@@ -1,7 +1,7 @@
 Summary: A library for handling different graphics file formats
 Name: netpbm
 Version: 10.61.02
-Release: 5%{?dist}
+Release: 9%{?dist}
 # See copyright_summary for details
 License: BSD and GPLv2 and IJG and MIT and Public Domain
 Group: System Environment/Libraries
@@ -38,6 +38,8 @@ Patch27: netpbm-multipage-pam.patch
 Patch28: netpbm-compare-same-images.patch
 #Patch29: netpbm-man-corrections.patch
 Patch29: netpbm-manual-pages.patch
+Patch30: netpbm-pnmtops-hangs.patch
+Patch31: netpbm-pgmtexture-fault.patch
 BuildRequires: libjpeg-devel, libpng-devel, libtiff-devel, flex
 BuildRequires: libX11-devel, python, jasper-devel, libxml2-devel
 
@@ -116,7 +118,8 @@ netpbm-doc.  You'll also need to install the netpbm-progs package.
 %patch28 -p1 -b .compare-same-images
 #%patch29 -p1 -b .man-corrections
 %patch29 -p1 -b .manual-pages
-exit 0
+%patch30 -p1 -b .pnmtops-hangs
+%patch31 -p1 -b .pgmtexture-fault
 
 sed -i 's/STRIPFLAG = -s/STRIPFLAG =/g' config.mk.in
 rm -rf converter/other/jpeg2000/libjasper/
@@ -271,6 +274,18 @@ rm -rf $RPM_BUILD_ROOT
 %doc userguide/*
 
 %changelog
+* Tue Feb 25 2014 Petr Hracek <phracek@redhat.com> - 10.61.02-9
+- Resolves: #1052154 - Pgmtexture gets aborted
+
+* Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 10.61.02-8
+- Mass rebuild 2014-01-24
+
+* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 10.61.02-7
+- Mass rebuild 2013-12-27
+
+* Tue Dec 17 2013 Petr Hracek <phracek@redhat.com> - 10.61.02-6
+- Resolves: 1031514 - netpbm hangs during pnmtops conversion
+
 * Mon Jun 17 2013 Petr Hracek <phracek@redhat.com> - 10.61.02-5
 - Manual page corrections (#948531)
 
