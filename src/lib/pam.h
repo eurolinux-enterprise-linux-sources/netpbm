@@ -52,9 +52,13 @@ struct pam {
         */
     FILE * file;
     int format;
-        /* The format code of the raw image.  This is PAM_FORMAT
+        /* The format code of the image.  This is PAM_FORMAT
            unless the PAM image is really a view of a PBM, PGM, or PPM
-           image.  Then it's PBM_FORMAT, RPBM_FORMAT, etc.
+           image.  Then it's PBM_FORMAT, RPBM_FORMAT, etc.  For output,
+           only the format _type_ is significant, e.g. PBM_FORMAT
+           and RPBM_FORMAT have identical effect.  This is because on
+           output, 'plainformat' determines whether the output is the
+           raw or plain format of the type given by 'format'.
            */
     unsigned int plainformat;
         /* Logical: On output, use plain version of the format type
@@ -67,6 +71,9 @@ struct pam {
            Before Netpbm 10.32, this was rather different.  It simply
            described for convenience the plainness of the format indicated
            by 'format'.
+
+           This is meaningless when 'format' is PAM_FORMAT, as PAM does not
+           have plain and raw variations.
         */
     int height;  /* Height of image in rows */
     int width;   
@@ -156,6 +163,9 @@ struct pam {
 #define PAM_PBM_TUPLETYPE "BLACKANDWHITE"
 #define PAM_PGM_TUPLETYPE "GRAYSCALE"
 #define PAM_PPM_TUPLETYPE "RGB"
+#define PAM_PBM_ALPHA_TUPLETYPE "BLACKANDWHITE_ALPHA"
+#define PAM_PGM_ALPHA_TUPLETYPE "GRAYSCALE_ALPHA"
+#define PAM_PPM_ALPHA_TUPLETYPE "RGB_ALPHA"
 
 #define PAM_PBM_BLACK PAM_BLACK
 #define PAM_PBM_WHITE PAM_BW_WHITE
@@ -483,6 +493,9 @@ tuple
 pnm_parsecolor(const char * const colorname,
                sample       const maxval);
 
+tuplen
+pnm_parsecolorn(const char * const colorname);
+
 const char *
 pnm_colorname(struct pam * const pamP,
               tuple        const color,
@@ -514,6 +527,8 @@ pnm_backgroundtuple(struct pam *  const pamP,
 /*----------------------------------------------------------------------------
    These are meant for passing to pm_system() as Standard Input feeder
    and Standard Output accepter.
+
+   The 'feederParm' or 'accepterParm' is a pointer to a struct pamtuples.
 -----------------------------------------------------------------------------*/
 
 void

@@ -1,16 +1,19 @@
 #! /bin/bash
 # This script tests: pbmclean
-# Also requires: pbmmake pbmpage pnmmargin
+# Also requires: pbmmake pbmpage pnmmargin pnmpad
 
-${PBM_BINPREFIX}pbmmake -g 3 3 | ${PBM_BINPREFIX}pnmmargin -black 2 \
- >${tmpdir}/test.pbm
+
+tmpdir=${tmpdir:-/tmp}
+test_pbm=${tmpdir}/test.pbm
+
+pbmmake -g 3 3 | pnmmargin -black 2 > ${test_pbm}
 
 for n in 1 2 3 4 5 6 7 8
 do
-${PBM_TESTPREFIX}pbmclean -min=$n -black -plain ${tmpdir}/test.pbm
+pbmclean -min=$n -black -plain ${test_pbm}
 done
 
-rm ${tmpdir}/test.pbm
+rm ${test_pbm}
 
 # Should print 760076056 4210813
-${PBM_BINPREFIX}pbmpage 1 | ${PBM_TESTPREFIX}pbmclean -black | cksum
+pbmpage 1 | pbmclean -black | cksum

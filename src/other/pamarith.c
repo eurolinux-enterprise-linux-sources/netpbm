@@ -47,7 +47,7 @@ isDyadic(enum function const function) {
 
 
 
-struct cmdlineInfo {
+struct CmdlineInfo {
     /* All the information the user supplied in the command line,
        in a form easy for the program to use.
     */
@@ -60,7 +60,7 @@ struct cmdlineInfo {
 
 static void
 parseCommandLine(int argc, const char ** const argv,
-                 struct cmdlineInfo * const cmdlineP) {
+                 struct CmdlineInfo * const cmdlineP) {
 /*----------------------------------------------------------------------------
    Note that the file spec array we return is stored in the storage that
    was passed to us as the argv array.
@@ -265,7 +265,7 @@ computeOutputType(struct pam *  const outpamP,
 
 
 
-static sample
+static samplen
 samplenSum(samplen      const operands[],
            unsigned int const operandCt) {
 
@@ -282,7 +282,7 @@ samplenSum(samplen      const operands[],
 
 
 
-static sample
+static samplen
 samplenMin(samplen      const operands[],
            unsigned int const operandCt) {
 
@@ -298,7 +298,7 @@ samplenMin(samplen      const operands[],
 
 
 
-static sample
+static samplen
 samplenMax(samplen      const operands[],
            unsigned int const operandCt) {
 
@@ -314,7 +314,7 @@ samplenMax(samplen      const operands[],
 
 
 
-static sample
+static samplen
 samplenMean(samplen      const operands[],
             unsigned int const operandCt) {
 
@@ -329,7 +329,7 @@ samplenMean(samplen      const operands[],
 
 
 
-static sample
+static samplen
 samplenProduct(samplen      const operands[],
                unsigned int const operandCt) {
 
@@ -796,7 +796,7 @@ doUnNormalizedArith(struct pam *  const inpam1P,
 int
 main(int argc, const char *argv[]) {
 
-    struct cmdlineInfo cmdline;
+    struct CmdlineInfo cmdline;
     struct pam inpam1;
     struct pam inpam2;
     struct pam outpam;

@@ -6,12 +6,10 @@ Updated: Feb 22 2003
 <BR>
 <A HREF="#index">Table Of Contents</A>
 
-<A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
 ppmtoxpm - convert a PPM image to an X11 pixmap
 
-<A NAME="lbAC">&nbsp;</A>
-<H2>SYNOPSIS</H2>
+<H2 id="synopsis">SYNOPSIS</H2>
 
 <B>ppmtoxpm </B>
 [<B>-name=</B><I>xpmname</I>]
@@ -24,8 +22,7 @@ ppmtoxpm - convert a PPM image to an X11 pixmap
 hyphens instead of single hyphen to denote options.  You may use white
 space in place of the equals sign to separate an option name from its value.
 
-<A NAME="lbAD">&nbsp;</A>
-<H2>DESCRIPTION</H2>
+<H2 id="description">DESCRIPTION</H2>
 
 <p>This program is part of <a href="index.html">Netpbm</a>.
 
@@ -56,7 +53,7 @@ is greater than 15, such as by running it through <B>pamdepth 255</b>.
 
 <h3>Color Code Lengths - Image Size</h3>
 
-<p>In the XPM format, there is a palette (&quot;color map&quot;) that
+<p>In the XPM format, there is a palette ("color map") that
 assigns each color in the image to a unique sequence of printable
 characters called a color code, and a raster that identifies the color
 of each pixel of the image with one of those color codes.  The length
@@ -65,23 +62,21 @@ of the color code affects the size of the image stream.
 <p>All color codes in an image are the same length, and
 <b>ppmtoxpm</b> tries to make it as short as possible.  That length
 is, of course, determined by the number of colors in the image.
-<b>ppmtoxpm</b> counts the colors in the image, excluding those that
-will be transparent in the output due to your alpha mask, and chooses
-a color code length accordingly.  There are 92 printable characters
-that can be used in a color code.  Therefore, if you have 92 or fewer
-colors, your color codes will be one character.  If you have more than
-92 but not more than 92 * 92, your color codes will be two characters.
-And so on.
+<b>ppmtoxpm</b> counts the colors in the image, excluding those that will be
+transparent in the output because of your transparency mask, and chooses a
+color code length accordingly.  There are 92 printable characters that can be
+used in a color code.  Therefore, if you have 92 or fewer colors, your color
+codes will be one character.  If you have more than 92 but not more than 92 *
+92, your color codes will be two characters.  And so on.
 
-<p>There's one exception to the above: If you specify an alpha mask
+<p>There's one exception to the above: If you specify a transparency mask
 (the <b>-alpha</b> option, one unique color code represents
-&quot;transparent.&quot;  This is true even if the alpha mask doesn't 
+"transparent."  This is true even if the transparency mask doesn't 
 actually produce any transparent pixels.  So subtract one from the number
 of possible colors if you use <b>-alpha</b>.
 
 
-<A NAME="lbAE">&nbsp;</A>
-<H2>OPTIONS</H2>
+<H2 id="options">OPTIONS</H2>
 
 <DL COMPACT>
 <DT><B>-name=</B><I>xpmname</I>
@@ -107,7 +102,8 @@ it was the default, overridden by specifying <b>-rgb</b>.
 
 <DD>This option names the file in which the color dictionary you want
 to use resides.  By default, <b>ppmtoxpm</b> uses the <a
-href="libppm.html#rgb.txt">system color dictionary</a>. 
+href="libppm.html#rgb.txt">system color dictionary</a>, and if it cannot
+open that file, uses hexadecimal color specifiers.
 
 <P>This option in meaningless when you specify <b>-hexonly</b>.
 
@@ -117,15 +113,15 @@ to the system color dictionary.  If you didn't specify <b>-rgb</b>,
 
 <DT><B>-alphamask=</B><I>pgmfile</I>
 
-<DD> This option names a PGM file to use as an alpha (transparency)
+<DD> This option names a PGM file to use as a transparency (alpha)
 mask.  The file must contain an image the same dimensions as the input
 image.  <B>ppmtoxpm</B> marks as transparent any pixel whose position
-in the alpha mask image is at most half white.  
+in the transparency mask image is at most half white.  
 
 <P>If you don't specify <B>-alphamask</B>, <B>ppmtoxpm</B> makes all
 pixels in the output opaque.  
 
-<P><B>ppmcolormask</B> is one way to generate an alpha mask file.  You
+<P><B>ppmcolormask</B> is one way to generate a transparency mask file.  You
 might also generate it by extracting transparency information from an
 XPM file with the <B>-alphaout</B> option to <B>xpmtoppm</B>.
 
@@ -133,8 +129,7 @@ XPM file with the <B>-alphaout</B> option to <B>xpmtoppm</B>.
 formats that include transparency information too.
 </DL>
 
-<A NAME="lbAG">&nbsp;</A>
-<H2>SEE ALSO</H2>
+<H2 id="seealso">SEE ALSO</H2>
 
 <B><A HREF="ppmcolormask.html">ppmcolormask</A></B>,
 <B><A HREF="xpmtoppm.html">xpmtoppm</A></B>,
@@ -145,8 +140,7 @@ formats that include transparency information too.
 XPM Manual by Arnaud Le Hors <A
 HREF="mailto:lehors@mirsa.inria.fr">lehors@mirsa.inria.fr</A>
 
-<A NAME="lbAH">&nbsp;</A>
-<H2>AUTHOR</H2>
+<H2 id="author">AUTHOR</H2>
 
 <p>
 Copyright (C) 1990 by Mark W. Snitily.
@@ -155,7 +149,7 @@ Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted, provided
 that the above copyright notice appear in all copies and that both that
 copyright notice and this permission notice appear in supporting
-documentation.  This software is provided &quot;as is&quot; without express or
+documentation.  This software is provided "as is" without express or
 implied warranty.
 <P>
 This tool was developed for Schlumberger Technologies, ATE Division, and
@@ -174,12 +168,11 @@ HREF="mailto:lehors@mirsa.inria.fr">lehors@mirsa.inria.fr</A>), April
 <A NAME="index">&nbsp;</A>
 <H2>Table Of Contents</H2>
 <UL>
-<LI><A HREF="#lbAB">NAME</A>
-<LI><A HREF="#lbAC">SYNOPSIS</A>
-<LI><A HREF="#lbAD">DESCRIPTION</A>
-<LI><A HREF="#lbAE">OPTIONS</A>
-<LI><A HREF="#lbAG">SEE ALSO</A>
-<LI><A HREF="#lbAH">AUTHOR</A>
+<LI><A HREF="#synopsis">SYNOPSIS</A>
+<LI><A HREF="#description">DESCRIPTION</A>
+<LI><A HREF="#options">OPTIONS</A>
+<LI><A HREF="#seealso">SEE ALSO</A>
+<LI><A HREF="#author">AUTHOR</A>
 </UL>
 </BODY>
 </HTML>

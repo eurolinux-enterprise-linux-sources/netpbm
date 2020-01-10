@@ -6,7 +6,7 @@
 </HEAD>
 <BODY>
 <H1>ppm</H1>
-Updated: 03 October 2003
+Updated: 09 October 2016
 <BR>
 <A HREF="#index">Table Of Contents</A>
 
@@ -35,12 +35,14 @@ every respect except the precise semantics of the sample values.
 These files are useful because of the way PPM is used as an
 intermediary format.  They are informally called PPM files, but to be
 absolutely precise, you should indicate the variation from true PPM.
-For example, &quot;PPM using the red, green, and blue colors that the
-scanner in question uses.&quot;
+For example, "PPM using the red, green, and blue colors that the
+scanner in question uses."
 
 <P>The name "PPM" is an acronym derived from "Portable Pixel Map."
 Images in this format (or a precursor of it) were once also called
 "portable pixmaps."
+
+<H2 id="format">THE FORMAT</H2>
 
 <P>The format definition is as follows.  You can use the <a
 href="libnetpbm.html">libnetpbm</a> C subroutine library to read and
@@ -52,8 +54,8 @@ no data, delimiters, or padding before, after, or between images.
 <P>Each PPM image consists of the following:
 
 <OL>
-<LI>A &quot;magic number&quot; for identifying the file type.
-A ppm image's magic number is the two characters &quot;P6&quot;.
+<LI>A "magic number" for identifying the file type.
+A ppm image's magic number is the two characters "P6".
 <LI>
 Whitespace (blanks, TABs, CRs, LFs).
 <LI>
@@ -80,7 +82,7 @@ significant byte is first.
 <P>A row of an image is horizontal.  A column is vertical.  The pixels
 in the image are square and contiguous.
      
-<p>In the raster, the sample values are &quot;nonlinear.&quot; They are
+<p>In the raster, the sample values are "nonlinear." They are
 proportional to the intensity of the ITU-R Recommendation BT.709 red,
 green, and blue in the pixel, adjusted by the BT.709 gamma transfer
 function.  (That transfer function specifies a gamma number of 2.2 and
@@ -90,6 +92,8 @@ in the color universe of which the image is part (the color universe
 is all the colors in all images to which this image might be
 compared).
 
+<p>BT.709's range of channel values (16-240) is irrelevant to PPM.
+
 <p>ITU-R Recommendation BT.709 is a renaming of the former CCIR
 Recommendation 709.  When CCIR was absorbed into its parent
 organization, the ITU, ca. 2000, the standard was renamed.  This
@@ -97,50 +101,57 @@ document once referred to the standard as CIE Rec. 709, but it isn't
 clear now that CIE ever sponsored such a standard.
 
 <P>Note that another popular color space is the newer sRGB.  A common
-variation on PPM is to substitute this color space for the one specified.
+variation from PPM is to substitute this color space for the one specified.
+You can use <b>pnmgamma</b> to convert between this variation and true PPM.
 
-<p>
-Note that a common variation on the PPM format is to have the sample
-values be &quot;linear,&quot; i.e. as specified above except without
+<p>Note that a common variation from the PPM format is to have the sample
+values be "linear," i.e. as specified above except without
 the gamma adjustment.  <B>pnmgamma</B> takes such a PPM variant as
 input and produces a true PPM as output.
 
 </OL>
 
-<p>Strings starting with &quot;#&quot; may be comments, the same as
+<p>Strings starting with "#" may be comments, the same as
 with <a href="pbm.html">PBM</a>.
 
 <P>Note that you can use <B>pamdepth</B> to convert between a the
 format with 1 byte per sample and the one with 2 bytes per sample.
 
+<p>All characters referred to herein are encoded in ASCII.
+"newline" refers to the character known in ASCII as Line
+Feed or LF.  A "white space" character is space, CR, LF,
+TAB, VT, or FF (I.e. what the ANSI standard C isspace() function
+calls white space).
+
+<h3 id="plainppm">Plain PPM</h3>
+
 <P>There is actually another version of the PPM format that is fairly
-rare: &quot;plain&quot; PPM format.  The format above, which generally
-considered the normal one, is known as the &quot;raw&quot; PPM format.
+rare: "plain" PPM format.  The format above, which generally
+considered the normal one, is known as the "raw" PPM format.
 See <B><A HREF="pbm.html">pbm</A></B> for some commentary on how plain
 and raw formats relate to one another and how to use them.
 
 <P>The difference in the plain format is:
 
-<DL COMPACT>
-<DT>-<DD>
+<ul>
+<li>
 There is exactly one image in a file.
-<DT>-<DD>
+<li>
 The magic number is P3 instead of P6.
-<DT>-<DD>
+<li>
 Each sample in the raster is represented as an ASCII decimal number
 (of arbitrary size).
-<DT>-<DD>
+<li>
 Each sample in the raster has white space before and after it.  There must
 be at least one character of white space between any two samples, but there
 is no maximum.  There is no particular separation of one pixel from another --
 just the required separation between the blue sample of one pixel from the
 red sample of the next pixel.
-<DT>-<DD>
+<li>
 No line should be longer than 70 characters.
-</DL>
-<P>
+</ul>
 
-Here is an example of a small image in this format.
+<P>Here is an example of a small image in this format.
 <PRE>
 P3
 # feep.ppm
@@ -157,11 +168,23 @@ P3
 <P>Programs that read this format should be as lenient as possible,
 accepting anything that looks remotely like a PPM image.
 
-<p>All characters referred to herein are encoded in ASCII.
-&quot;newline&quot; refers the the character known in ASCII as Line
-Feed or LF.  A &quot;white space&quot; character is space, CR, LF,
-TAB, VT, or FF (I.e. what the ANSI standard C isspace() function
-calls white space).
+
+<h2 id="internetmediatype">INTERNET MEDIA TYPE</h2>
+
+<p>No Internet Media Type (aka MIME type, content type) for PPM has been
+registered with IANA, but the value <tt>image/x-portable-pixmap</tt> is
+conventional.
+
+<p>Note that the PNM Internet Media Type <tt>image/x-portable-anymap</tt>
+also applies.
+
+
+<h2 id="filename">FILE NAME</h2>
+
+<p>There are no requirements on the name of a PPM file, but the convention is
+to use the suffix ".ppm".  "pnm" is also conventional, for
+cases where distinguishing between the particular subformats of PNM is not
+convenient.
 
 
 <H2 id="compatibility">COMPATIBILITY</H2>
@@ -187,6 +210,12 @@ data after the first image.
 <H2 id="index">Table Of Contents</H2>
 <UL>
 <LI><A HREF="#description">DESCRIPTION</A>
+<LI><A HREF="#format">THE FORMAT</A>
+<ul>
+  <li><A HREF="#plainppm">Plain PPM</A>
+    </ul>
+<li><A HREF="#internetmediatype">INTERNET MEDIA TYPE</A>
+<li><A HREF="#filename">FILE NAME</A>
 <LI><A HREF="#compatibility">COMPATIBILITY</A>
 <LI><A HREF="#seealso">SEE ALSO</A>
 </UL>

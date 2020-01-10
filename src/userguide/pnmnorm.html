@@ -2,27 +2,27 @@
 <HTML><HEAD><TITLE>Pnmnorm User Manual</TITLE></HEAD>
 <BODY>
 <H1>pnmnorm</H1>
-Updated: 6 January 2006
+Updated: 19 December 2014
 <BR>
 <A HREF="#index">Table Of Contents</A>
 
 <H2>NAME</H2>
 
-pnmnorm - normalize the contrast in a Netbpm image
+pnmnorm - normalize the contrast in a Netpbm image
 
 <H2 id="synopsis">SYNOPSIS</H2>
 
 <B>pnmnorm</B>
 
-[<B>-bpercent=</B><I>N</I> | <B>-bvalue=</B><I>N</I>]
+[<B>-bpercent=</B><I>percent</I> | <B>-bvalue=</B><I>N</I> | <b>-bsingle</b>]
 
-[<B>-wpercent=</B><I>N</I> | <B>-wvalue=</B><I>N</I>]
+[<B>-wpercent=</B><I>percent</I> | <B>-wvalue=</B><I>N</I> | <b>-wsingle</b>]
 
 [<b>-midvalue=</b><i>N</i>]
 
 [<b>-middle=N</b>]
 
-[<b>-maxexpand</b>]
+[<b>-maxexpand=</b><i>percent</i>]
 
 [<B>-keephues</B>]
 
@@ -70,7 +70,7 @@ approximate the desired brightness.
 <li>saturation
 </ol>
 
-In the case of saturation, &quot;brightness&quot; is pretty much a
+In the case of saturation, "brightness" is pretty much a
 misnomer, but you can use the brightness analogy to see what it does.
 In the analogy, bright means saturated and dark means unsaturated.
 
@@ -90,7 +90,12 @@ change the picture in exchange.
 
 <P>By default, the darkest 2 percent of all pixels are mapped to
 black, and the brightest 1 percent are mapped to white.  You can
-override these percentages by using the <B>-bpercent</B> and
+override this behavior and specify either a different percentage, or
+specific brightness values to map to black and to white, or just have
+the single greatest brightness map to white and the least brightness map
+to black.
+
+<p>To specify a percentage, use the <B>-bpercent</B> and
 <B>-wpercent</B> options, or you can specify the exact pixel values to
 be mapped by using the <B>-bvalue</B> and <B>-wvalue</B> options.
 You can get appropriate numbers for the options from
@@ -146,10 +151,16 @@ value 99 or the white value 101.
 option.  Sometimes, too much contrast is a bad thing.  If your
 intensities are all concentrated in the middle, <b>-bpercent=2</b> and
 <b>-wpercent=1</b> might mean that an intensity of 60 gets stretched
-up to 100 and and intensity of 20 gets stretched down to zero, for a
+up to 100 and intensity of 20 gets stretched down to zero, for a
 range expansion of 150% (from a range of 40 to a range of 100).  That
 much stretching means two adjacent pixels that used to differ in
 intensity by 4 units now differ by 10, and that might be unsightly.
+
+<p>To specify that the single least brightness in the image should stretch to
+black in the output, specify <b>-bsingle</b>.  To specify that the single
+greatest brightness in the image should stretch to white in the output,
+specify <b>-wsingle</b>.  <b>-bsingle</b> and <b>-wsingle</b> were new in
+Netpbm 10.69 (December 2014).
 
 <p>So that you can put a limit on the amount of expansion without
 having to examine the image first, there is the <b>-maxexpand</b>
@@ -162,7 +173,7 @@ stretch to zero intensity as described above, and then raises the
 former and lowers the latter as needed to limit the expansion to the
 amount you specified.
 
-<p>When <b>pnmnorm</b> limits the expansion due to <b>-maxexpand</b>,
+<p>When <b>pnmnorm</b> limits the expansion because of <b>-maxexpand</b>,
 it tells you about it with a message like this:
 <pre>
 <tt>
@@ -234,7 +245,7 @@ what property of the pixels <b>pnmnorm</b> normalizes.  I.e., what kind of
 brightness.  You cannot specify more than one of these.
 
 <P>The <B>-luminosity</B> option says to use the luminosity (i.e. the
-&quot;Y&quot; in the YUV or YCbCr color space) as the pixel's brightness.  The
+"Y" in the YUV or YCbCr color space) as the pixel's brightness.  The
 luminosity is a measure of how bright a human eye would find the color,
 taking into account the fact that the human eye is more sensitive to some
 RGB components than others.
@@ -249,7 +260,7 @@ but its meaning was still the default.
 <P>Before Netpbm 10.28 (August 2005), there was no <B>-colorvalue</B> option.
 
 <P>The <B>-colorvalue</B> option says to use the color value (i.e. the
-&quot;V&quot; in the HSV color space) as the pixel's brightness.  The
+"V" in the HSV color space) as the pixel's brightness.  The
 color value is the gamma-adjusted intensity of the most intense RGB
 component.
 
@@ -258,13 +269,13 @@ component.
 <P>Before Netpbm 10.28 (August 2005), there was no <B>-colorvalue</B> option.
 
 <p>The <b>-saturation</b> option says to use the saturation (i.e. the
-&quot;S&quot; in the HSV color space) as the pixel's brightness.  The
+"S" in the HSV color space) as the pixel's brightness.  The
 saturation is the ratio of the intensity of the most intense RGB
 component to the difference between the intensities of the most and least
 intense RGB component (all intensities gamma-adjusted).
 
-<p>In this case, &quot;brightness&quot; is more of a metaphor than anything.
-&quot;bright&quot; means saturated and &quot;dark&quot; means unsaturated.
+<p>In this case, "brightness" is more of a metaphor than anything.
+"bright" means saturated and "dark" means unsaturated.
 
 <p>This option is meaningless on grayscale images.
 

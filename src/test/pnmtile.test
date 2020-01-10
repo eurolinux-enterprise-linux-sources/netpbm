@@ -2,11 +2,21 @@
 # This script tests: pnmtile
 # Also requires: pnmcat
 
-${PBM_TESTPREFIX}pnmtile 40 50 testgrid.pbm | cksum
 
-${PBM_TESTPREFIX}pnmtile 454 298 testimg.ppm > ${tmpdir}/testimg4.ppm &&
-${PBM_BINPREFIX}pnmcat -lr testimg.ppm testimg.ppm > ${tmpdir}/testimg2.ppm &&
-${PBM_BINPREFIX}pnmcat -tb ${tmpdir}/testimg2.ppm ${tmpdir}/testimg2.ppm | \
-diff - ${tmpdir}/testimg4.ppm && echo $?
+# Test 1.  Should print 4228632379 259
+pnmtile 40 50 testgrid.pbm | cksum
 
-rm ${tmpdir}/testimg{2,4}.ppm
+tmpdir=${tmpdir:-/tmp}
+
+# Test 2.  Compare 2x2 tile images produced by pnmtile and pnmcat
+# Should print 0
+testimg2_ppm=${tmpdir}/testimg2.ppm
+testimg4_ppm=${tmpdir}/testimg4.ppm
+
+pnmtile 454 298 testimg.ppm > ${testimg4_ppm} &&
+pnmcat -lr testimg.ppm testimg.ppm > ${testimg2_ppm} &&
+pnmcat -tb ${testimg2_ppm} ${testimg2_ppm} | \
+cmp -s - ${testimg4_ppm}
+echo $?
+
+rm ${testimg2_ppm} ${testimg4_ppm}

@@ -3,7 +3,7 @@
 <HEAD><TITLE>Pamarith User Manual</TITLE></HEAD>
 <BODY>
 <H1>pamarith</H1>
-Updated: 08 April 2007
+Updated: 03 January 2015
 <BR>
 <A HREF="#index">Table Of Contents</A>
 
@@ -42,9 +42,9 @@ input image is the equivalent PAM image of tuple type
 and if it produces a PBM, PGM, or PPM output, produces the equivalent
 of the PAM image which is the result of the calculation.
 
-<p>The first <i>pamfile</i> argument identifies the &quot;left&quot;
+<p>The first <i>pamfile</i> argument identifies the "left"
 argument image; the second <i>pamfile</i> argument identifies the
-&quot;right&quot; one.
+"right" one.
 
 <p>If the output is PAM, the tuple type is the same as the tuple type of
 the left input image.
@@ -52,11 +52,12 @@ the left input image.
 <P><b>pamarith</b> performs the arithmetic on each pair of identically
 located tuples in the two input images.
 
-<p>The arithmetic operation is in all cases fundamentally a function
-from two integers to an integer.  The operation is performed on two
-tuples as follows.  The two input images must have the same depth, or
-one of them must have depth one.  <b>pamarith</b> fails if one of
-these is not the case.
+<p>The arithmetic operation is in all cases fundamentally a function from two
+integers to an integer (but see below - the functions are defined in ways that
+you can effectively e.g. add real numbers).  The operation is performed on two
+tuples as follows.  The two input images must have the same depth, or one of
+them must have depth one.  <b>pamarith</b> fails if one of these is not the
+case.
 
 <p>If they have the same depth, <b>pamarith</b> simply carries out the
 arithmetic one sample at a time.  I.e. if at a particular position the
@@ -81,7 +82,7 @@ according to the function you select.
 one that applies when a PAM image represents a visual image), is that
 it represents a fraction of some maximum.  The maxval of the image
 corresponds to some maximum value (in the case of a visual image, it
-corresponds to &quot;full intensity.&quot;), and a sample value
+corresponds to "full intensity."), and a sample value
 divided by the maxval gives the fraction.
 
 <p>For <b>pamarith</b>, this interpretation applies to the regular
@@ -159,7 +160,7 @@ tends to produce nonobvious results because of the way <b>pamarith</b>
 interprets sample values.  See <a href="#maxval">Maxval</a>.
 
 <P><b>-divide</b> divides a value in the left input image by the value
-in the left input image.  But like <b>-multiply</b>, it tends to
+in the right input image.  But like <b>-multiply</b>, it tends to
 produce nonobvious results.  Note that <b>pamarith</b> clipping
 behavior makes this of little use when the left argument (dividend) is
 greater than the right argument (divisor) -- the result in that case
@@ -172,7 +173,7 @@ left input image is less than the value in the right input image,
 greater than the right.
 
 <p>If the maxvals of the input images are not identical, <b>pamarith</b>
-may claim two values are not equal when in fact they are, due to
+may claim two values are not equal when in fact they are, because of
 the precision with which it does the arithmetic.  However, it will never
 say A is greater than B if A is less than B.
 

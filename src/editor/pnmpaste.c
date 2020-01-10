@@ -21,7 +21,7 @@
 
 enum boolOp {REPLACE, AND, OR, XOR /*, NAND, NOR, NXOR */ };
 
-struct cmdlineInfo {
+struct CmdlineInfo {
     /* All the information the user supplied in the command line,
        in a form easy for the program to use.
     */
@@ -36,7 +36,7 @@ struct cmdlineInfo {
 
 static void
 parseCommandLine(int argc, const char ** argv,
-                 struct cmdlineInfo * const cmdlineP) {
+                 struct CmdlineInfo * const cmdlineP) {
 /*----------------------------------------------------------------------------
    Note that the file spec array we return is stored in the storage that
    was passed to us as the argv array.
@@ -125,7 +125,7 @@ rightBits(unsigned char const x,
 -----------------------------------------------------------------------------*/
     assert(n <= 8);
 
-    return (x << (8-n)) >> (8-n);
+    return ((unsigned char)(x << (8-n))) >> (8-n);
 }
 
 
@@ -178,8 +178,8 @@ insertDirect(FILE *          const ifP,
         }
     }
 
-    /* destrow[] now contains garbage in the cols % 8 rightmost bits of the
-       last byte we touched.  Those are supposed to be unchanged from the
+    /* destrow[] now contains garbage in all but the cols % 8 leftmost bits of
+       the last byte we touched.  Those are supposed to be unchanged from the
        input, so we restore them now.
     */
     if (cols % 8 > 0)
@@ -201,8 +201,8 @@ insertShift(FILE *          const ifP,
    Same as insertDirect(), but start merging 'offset' bits from the left
    end of 'destrow'.  'offset' is less than 8.
 
-   buffer[] is wide enough to hold a packed PBM row of *ifP plus one
-   byte of margin.
+   buffer[] is wide enough to hold a packed PBM row of *ifP plus two
+   bytes of margin.
 -----------------------------------------------------------------------------*/
     unsigned int  const shiftByteCt = pbm_packed_bytes(cols + offset);
     unsigned int  const last        = shiftByteCt - 1;
@@ -268,7 +268,7 @@ pastePbm(FILE *       const fpInset,
   Fast paste for PBM
 -----------------------------------------------------------------------------*/
     unsigned char * const baserow       = pbm_allocrow_packed(baseCols);
-    unsigned char * const buffer        = pbm_allocrow_packed(insetCols+8);
+    unsigned char * const buffer        = pbm_allocrow_packed(insetCols+16);
     unsigned int    const shiftByteCt   = insertCol / 8;
     unsigned int    const shiftOffset   = insertCol % 8;
     unsigned int    const baseColByteCt = pbm_packed_bytes(baseCols);
@@ -354,7 +354,7 @@ pasteNonPbm(FILE *       const fpInset,
 int
 main(int argc, const char ** argv) {
 
-    struct cmdlineInfo cmdline;
+    struct CmdlineInfo cmdline;
     FILE * fpInset;
     FILE * fpBase;
     xelval maxvalInset, maxvalBase;

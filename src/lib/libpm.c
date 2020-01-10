@@ -8,8 +8,9 @@
   Netpbm library subroutines.
 **************************************************************************/
 
+#define _DEFAULT_SOURCE      /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE          /* Make sure strdup is in string.h */
-#define _XOPEN_SOURCE 600    /* Make sure ftello, fseeko are defined */
+#define _XOPEN_SOURCE 500    /* Make sure ftello, fseeko are defined */
 
 #include "netpbm/pm_config.h"
 
@@ -34,7 +35,7 @@
 #include "netpbm/shhopt.h"
 #include "compile.h"
 
-#include "netpbm/pm.h"
+#include "pm.h"
 
 /* The following are set by pm_init(), then used by subsequent calls to other
    pm_xxx() functions.
@@ -278,6 +279,20 @@ pm_error(const char format[], ...) {
 
 
 
+int
+pm_have_float_format(void) {
+/*----------------------------------------------------------------------------
+  Return 1 if %f, %e, and %g work in format strings for pm_message, etc.;
+  0 otherwise.
+
+  Where they don't "work," that means the specifier just appears itself in
+  the formatted strings, e.g. "the number is g".
+-----------------------------------------------------------------------------*/
+    return pm_vasprintf_knows_float();
+}
+
+
+
 static void *
 mallocz(size_t const size) {
 
@@ -502,13 +517,51 @@ pm_init(const char * const progname,
 
 
 
+static const char *
+dtMsg(time_t const dateTime) {
+/*----------------------------------------------------------------------------
+   Text for the version message to indicate datetime 'dateTime'.
+-----------------------------------------------------------------------------*/
+    struct tm * const brokenTimeP = localtime(&dateTime);
+
+    char buffer[100];
+    
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", brokenTimeP);
+
+    return pm_strdup(buffer);
+}
+
+
+
 static void
 showVersion(void) {
-    pm_message( "Using libnetpbm from Netpbm Version: %s", NETPBM_VERSION );
-#if defined(COMPILE_TIME) && defined(COMPILED_BY)
-    pm_message( "Compiled %s by user \"%s\"",
-                COMPILE_TIME, COMPILED_BY );
+
+    pm_message("Using libnetpbm from Netpbm Version: %s", NETPBM_VERSION);
+
+    /* SOURCE_DATETIME is defined when the user wants a reproducible build,
+       so wants the source code modification datetime instead of the build
+       datetime in the object code.
+    */
+#if defined(SOURCE_DATETIME)
+    {
+        const char * const sourceDtMsg = dtMsg(SOURCE_DATETIME);
+        pm_message("Built from source dated %s", sourceDtMsg);
+        pm_strfree(sourceDtMsg);
+    }
+#else
+  #if defined(BUILD_DATETIME)
+    {
+        const char * const buildDtMsg = dtMsg(BUILD_DATETIME);
+        pm_message("Built at %s", buildDtMsg);
+        pm_strfree(buildDtMsg);
+    }
+  #endif
 #endif
+
+#if defined(COMPILED_BY)
+    pm_message("Built by %s", COMPILED_BY);
+#endif
+
 #ifdef BSD
     pm_message( "BSD defined" );
 #endif /*BSD*/
@@ -595,63 +648,85 @@ showNetpbmHelp(const char progname[]) {
 
 
 
+static void
+parseCommonOptions(int *         const argcP,
+                   const char ** const argv,
+                   bool *        const showMessagesP,
+                   bool *        const showVersionP,
+                   bool *        const showHelpP,
+                   bool *        const plainOutputP) {
+
+    unsigned int inCursor;
+    unsigned int outCursor;
+
+    *showMessagesP = true;   /* initial assumption */
+    *showVersionP  = false;  /* initial assumption */
+    *showHelpP     = false;  /* initial assumption */
+    *plainOutputP  = false;  /* initial assumption */
+
+    for (inCursor = 1, outCursor = 1; inCursor < *argcP; ++inCursor) {
+            if (strcaseeq(argv[inCursor], "-quiet") ||
+                strcaseeq(argv[inCursor], "--quiet")) 
+                *showMessagesP = false;
+            else if (strcaseeq(argv[inCursor], "-version") ||
+                     strcaseeq(argv[inCursor], "--version")) 
+                *showVersionP = true;
+            else if (strcaseeq(argv[inCursor], "-help") ||
+                     strcaseeq(argv[inCursor], "--help") ||
+                     strcaseeq(argv[inCursor], "-?")) 
+                *showHelpP = true;
+            else if (strcaseeq(argv[inCursor], "-plain") ||
+                     strcaseeq(argv[inCursor], "--plain"))
+                *plainOutputP = true;
+            else
+                argv[outCursor++] = argv[inCursor];
+        }
+    *argcP = outCursor;
+}
+
+
+
 void
-pm_proginit(int * const argcP, const char * argv[]) {
+pm_proginit(int *         const argcP,
+            const char ** const argv) {
 /*----------------------------------------------------------------------------
    Do various initialization things that all programs in the Netpbm package,
    and programs that emulate such programs, should do.
 
-   This includes processing global options.
+   This includes processing global options.  We scan argv[], which has *argcP
+   elements, for common options and execute the functions for the ones we
+   find.  We remove the common options from argv[], updating *argcP
+   accordingly.
 
    This includes calling pm_init() to initialize the Netpbm libraries.
 -----------------------------------------------------------------------------*/
     const char * const progname = pm_arg0toprogname(argv[0]);
         /* points to static memory in this library */
-    int argn, i;
-    bool showmessages;
-    bool show_version;
+    bool showMessages;
+    bool plain;
+    bool justShowVersion;
         /* We're supposed to just show the version information, then exit the
            program.
         */
-    bool show_help;
+    bool justShowHelp;
         /* We're supposed to just tell user where to get help, then exit the
            program.
         */
 
     pm_init(progname, 0);
 
-    /* Check for any global args. */
-    showmessages = TRUE;
-    show_version = FALSE;
-    show_help = FALSE;
-    pm_plain_output = FALSE;
-    for (argn = 1; argn < *argcP; ++argn) {
-        if (pm_keymatch(argv[argn], "-quiet", 6) ||
-            pm_keymatch(argv[argn], "--quiet", 7)) 
-            showmessages = FALSE;
-        else if (pm_keymatch(argv[argn], "-version", 8) ||
-                   pm_keymatch(argv[argn], "--version", 9)) 
-            show_version = TRUE;
-        else if (pm_keymatch(argv[argn], "-help", 5) ||
-                 pm_keymatch(argv[argn], "--help", 6) ||
-                 pm_keymatch(argv[argn], "-?", 2)) 
-            show_help = TRUE;
-        else if (pm_keymatch(argv[argn], "-plain", 6) ||
-                 pm_keymatch(argv[argn], "--plain", 7))
-            pm_plain_output = TRUE;
-        else
-            continue;
-        for (i = argn + 1; i <= *argcP; ++i)
-            argv[i - 1] = argv[i];
-        --(*argcP);
-    }
+    parseCommonOptions(argcP, argv,
+                       &showMessages, &justShowVersion, &justShowHelp,
+                       &plain);
 
-    pm_setMessage((unsigned int) showmessages, NULL);
+    pm_plain_output = plain ? 1 : 0;
 
-    if (show_version) {
+    pm_setMessage(showMessages ? 1 : 0, NULL);
+
+    if (justShowVersion) {
         showVersion();
-        exit( 0 );
-    } else if (show_help) {
+        exit(0);
+    } else if (justShowHelp) {
         pm_error("Use 'man %s' for help.", progname);
         /* If we can figure out a way to distinguish Netpbm programs from 
            other programs using the Netpbm libraries, we can do better here.
@@ -661,6 +736,7 @@ pm_proginit(int * const argcP, const char * argv[]) {
         exit(0);
     }
 }
+
 
 
 void
@@ -700,10 +776,17 @@ extractAfterLastSlash(const char * const fullPath,
         strncpy(retval, slashPos +1, retvalSize);
         retval[retvalSize-1] = '\0';
     }
+}
 
-    /* Chop any .exe off the right end */
-    if (strlen(retval) >= 4 && strcmp(retval+strlen(retval)-4, ".exe") == 0)
-        retval[strlen(retval)-4] = 0;
+
+
+static void
+chopOffExe(char * const arg) {
+/*----------------------------------------------------------------------------
+  Chop any .exe off the right end of 'arg'.
+-----------------------------------------------------------------------------*/
+    if (strlen(arg) >= 4 && strcmp(arg+strlen(arg)-4, ".exe") == 0)
+        arg[strlen(arg)-4] = 0;
 }
 
 
@@ -732,12 +815,13 @@ pm_arg0toprogname(const char arg0[]) {
        for it.
     */
     static char retval[_MAX_FNAME];
-    _splitpath(fullPath, 0, 0,  retval, 0);
+    _splitpath(arg0, 0, 0,  retval, 0);
     if (MAX_RETVAL_SIZE < _MAX_FNAME)
         retval[MAX_RETVAL_SIZE] = '\0';
 #else
     static char retval[MAX_RETVAL_SIZE+1];
     extractAfterLastSlash(arg0, retval, sizeof(retval));
+    chopOffExe(retval);
 #endif
 
     return retval;

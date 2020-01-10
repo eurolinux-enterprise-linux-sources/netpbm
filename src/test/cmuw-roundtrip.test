@@ -1,6 +1,7 @@
 #! /bin/bash
 # This script tests: pbmtocmuwm cmuwmtopbm
-# Also requires: 
+# Also requires:
+
 
 # Should print 2425386270 41, cksum of testgrid.pbm
-${PBM_TESTPREFIX}pbmtocmuwm testgrid.pbm | ${PBM_TESTPREFIX}cmuwmtopbm | cksum
+pbmtocmuwm testgrid.pbm | cmuwmtopbm | cksum

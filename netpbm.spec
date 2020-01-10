@@ -1,7 +1,7 @@
 Summary: A library for handling different graphics file formats
 Name: netpbm
-Version: 10.61.02
-Release: 9%{?dist}
+Version: 10.79.00
+Release: 7%{?dist}
 # See copyright_summary for details
 License: BSD and GPLv2 and IJG and MIT and Public Domain
 Group: System Environment/Libraries
@@ -17,29 +17,20 @@ Patch1: netpbm-time.patch
 Patch2: netpbm-message.patch
 Patch3: netpbm-security-scripts.patch
 Patch4: netpbm-security-code.patch
-Patch5: netpbm-nodoc.patch
-Patch6: netpbm-gcc4.patch
-Patch7: netpbm-bmptopnm.patch
-Patch8: netpbm-CAN-2005-2471.patch
-Patch9: netpbm-xwdfix.patch
-Patch11: netpbm-multilib.patch
-Patch13: netpbm-glibc.patch
-Patch15: netpbm-docfix.patch
-Patch16: netpbm-ppmfadeusage.patch
-Patch17: netpbm-fiasco-overflow.patch
-Patch20: netpbm-noppmtompeg.patch
-Patch21: netpbm-cmuwtopbm.patch
-Patch22: netpbm-pamtojpeg2k.patch
-Patch23: netpbm-manfix.patch
-Patch24: netpbm-ppmtopict.patch
-Patch25: netpbm-pnmtopclxl.patch
-#Patch26: netpbm-man-repeated.patch
-Patch27: netpbm-multipage-pam.patch
-Patch28: netpbm-compare-same-images.patch
-#Patch29: netpbm-man-corrections.patch
-Patch29: netpbm-manual-pages.patch
-Patch30: netpbm-pnmtops-hangs.patch
-Patch31: netpbm-pgmtexture-fault.patch
+Patch5: netpbm-gcc4.patch
+Patch6: netpbm-bmptopnm.patch
+Patch7: netpbm-CAN-2005-2471.patch
+Patch8: netpbm-xwdfix.patch
+Patch9: netpbm-multilib.patch
+Patch10: netpbm-glibc.patch
+Patch11: netpbm-docfix.patch
+Patch12: netpbm-fiasco-overflow.patch
+Patch13: netpbm-noppmtompeg.patch
+Patch14: netpbm-cmuwtopbm.patch
+Patch15: netpbm-pamtojpeg2k.patch
+Patch16: netpbm-manfix.patch
+Patch17: netpbm-manual-pages.patch
+Patch18: netpbm-ppmfadeusage.patch
 BuildRequires: libjpeg-devel, libpng-devel, libtiff-devel, flex
 BuildRequires: libX11-devel, python, jasper-devel, libxml2-devel
 
@@ -97,33 +88,23 @@ netpbm-doc.  You'll also need to install the netpbm-progs package.
 %patch2 -p1 -b .message
 %patch3 -p1 -b .security-scripts
 %patch4 -p1 -b .security-code
-%patch5 -p1 -b .nodoc
-%patch6 -p1 -b .gcc4
-%patch7 -p1 -b .bmptopnm
-%patch8 -p1 -b .CAN-2005-2471
-%patch9 -p1 -b .xwdfix
-%patch11 -p1 -b .multilib
-%patch13 -p1 -b .glibc
-%patch15 -p1
-%patch16 -p1 -b .ppmfadeusage
-%patch17 -p1 -b .fiasco-overflow
-%patch20 -p1 -b .noppmtompeg
-%patch21 -p1 -b .cmuwtopbmfix
-%patch22 -p1 -b .pamtojpeg2kfix
-%patch23 -p1 -b .manfix
-%patch24 -p1 -b .ppmtopict
-%patch25 -p1 -b .pnmtopclxl
-#%patch26 -p1 -b .man-repeated
-%patch27 -p1 -b .multipage-pam
-%patch28 -p1 -b .compare-same-images
-#%patch29 -p1 -b .man-corrections
-%patch29 -p1 -b .manual-pages
-%patch30 -p1 -b .pnmtops-hangs
-%patch31 -p1 -b .pgmtexture-fault
+%patch5 -p1 -b .gcc4
+%patch6 -p1 -b .bmptopnm
+%patch7 -p1 -b .CAN-2005-2471
+%patch8 -p1 -b .xwdfix
+%patch9 -p1 -b .multilib
+%patch10 -p1 -b .glibc
+%patch11 -p1
+%patch12 -p1 -b .fiasco-overflow
+%patch13 -p1 -b .noppmtompeg
+%patch14 -p1 -b .cmuwtopbmfix
+%patch15 -p1 -b .pamtojpeg2kfix
+%patch16 -p1 -b .manfix
+%patch17 -p1 -b .manual-pages
+%patch18 -p1 -b .ppmfadeusage
 
-sed -i 's/STRIPFLAG = -s/STRIPFLAG =/g' config.mk.in
 rm -rf converter/other/jpeg2000/libjasper/
-sed -i -e 's/^SUBDIRS = libjasper/SUBDIRS =/' converter/other/jpeg2000/Makefile
+sed -i -e 's/SUBDIRS += libjasper//' converter/other/jpeg2000/Makefile
 
 %build
 ./configure <<EOF
@@ -149,7 +130,6 @@ sed -i -e 's/^SUBDIRS = libjasper/SUBDIRS =/' converter/other/jpeg2000/Makefile
 EOF
 
 TOP=`pwd`
-
 make \
 	CC="%{__cc}" \
 	LDFLAGS="-L$TOP/pbm -L$TOP/pgm -L$TOP/pnm -L$TOP/ppm" \
@@ -209,7 +189,7 @@ for i in hpcdtoppm \
 	 ppmsvgalib vidtoppm picttoppm \
 	 directory error extendedopacity \
 	 pam pbm pgm pnm ppm index libnetpbm_dir \
-	 liberror ppmtotga; do
+	 liberror; do
 	rm -f $RPM_BUILD_ROOT%{_mandir}/man1/${i}.1
 done
 rm -f $RPM_BUILD_ROOT%{_mandir}/man5/extendedopacity.5
@@ -224,6 +204,7 @@ rm -rf $RPM_BUILD_ROOT/usr/misc
 rm -rf $RPM_BUILD_ROOT/usr/man
 rm -rf $RPM_BUILD_ROOT/usr/pkginfo
 rm -rf $RPM_BUILD_ROOT/usr/config_template
+rm -rf $RPM_BUILD_ROOT/usr/pkgconfig_template
 
 # Don't ship the static library
 rm -f $RPM_BUILD_ROOT/%{_libdir}/lib*.a
@@ -274,6 +255,28 @@ rm -rf $RPM_BUILD_ROOT
 %doc userguide/*
 
 %changelog
+* Thu Jan 11 2018 Josef Ridky <jridky@redhat.com> - 10.79.00-7
+- Revert to version 10.79.00-4 due suggested changes didn't work
+
+* Thu Jan 11 2018 Josef Ridky <jridky@redhat.com> - 10.79.00-6
+- Spec update for RPM-Diff error
+
+* Thu Jan 04 2018 Josef Ridky <jridky@redhat.com> - 10.79.00-5
+- Fix RPM-Diff issue with relro on ppx64[le] arch (#1523946)
+
+* Thu Jan 04 2018 Josef Ridky <jridky@redhat.com> - 10.79.00-4
+- Resolves: #1523176 - add manual page for ppmtopga
+- Resolves: #1530606 - pbmtoepson command line option fix
+
+* Wed Nov 01 2017 Josef Ridky <jridky@redhat.com> - 10.79.00-3
+- Resolves: #1507569 - ppmfade error reporting
+
+* Wed Nov 01 2017 Josef Ridky <jridky@redhat.com> - 10.79.00-2
+- Resolves: #1507963 - fix ppmfade error with undefined subroutine
+
+* Tue Sep 05 2017 Josef Ridky <jridky@redhat.com> - 10.79.00-1
+- Resolves: #1381122 - Rebase to the latest upstream version
+
 * Tue Feb 25 2014 Petr Hracek <phracek@redhat.com> - 10.61.02-9
 - Resolves: #1052154 - Pgmtexture gets aborted
 

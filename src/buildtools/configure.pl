@@ -99,7 +99,7 @@ sub prompt($$) {
 
 
 sub promptYesNo($) {
-    my ($default) = $@;
+    my ($default) = @_;
 
     my $retval;
 
@@ -353,7 +353,7 @@ sub testCompile($$$) {
 sub testCompileLink($$$) {
     my ($flags, $cSourceCodeR, $successR) = @_;
 #-----------------------------------------------------------------------------
-#  Do a test compile of the program in @{$cSourceCodeR}.
+#  Do a test compile and link of the program in @{$cSourceCodeR}.
 #  
 #  Return $$successR == $TRUE iff the compile succeeds (exit code 0).
 #-----------------------------------------------------------------------------
@@ -442,6 +442,18 @@ sub askAboutDjgpp() {
 
 
 
+sub askAboutMingw() {
+
+    print("Are you building for the MinGW environment?\n");
+    print("\n");
+    
+    my $retval = promptYesNo("n");
+
+    return $retval;
+}
+
+
+
 sub computePlatformDefault($) {
 
     my ($defaultP) = @_;
@@ -478,10 +490,10 @@ sub getPlatform() {
     print("Which of the following best describes your platform?\n");
  
     print("gnu      GNU/Linux\n");
+    print("win      Windows/DOS (Cygwin, DJGPP, Mingw32)\n");
     print("sun      Solaris or SunOS\n");
     print("hp       HP-UX\n");
     print("aix      AIX\n");
-    print("win      Windows/DOS (Cygwin, DJGPP, Mingw32)\n");
     print("tru64    Tru64\n");
     print("irix     Irix\n");
     print("bsd      NetBSD, BSD/OS\n");
@@ -552,6 +564,29 @@ sub getPlatform() {
     }
 
     return($platform, $subplatform);
+}
+
+
+
+sub warnMingwXopenSource($) {
+    my ($subplatform) = @_;
+
+    if ($subplatform ne 'cygwin' && $subplatform ne 'djgpp') {
+        my $mingw = askAboutMingw();
+
+        if ($mingw) {
+            print << 'EOF';
+
+MinGW does not implement enough of the standard on which Netpbm relies to
+build out-of-the-box, but there is a trivial way to add the needed capability
+to MinGW.  See file doc/INSTALL for details.
+
+Press ENTER to continue.
+
+EOF
+            <STDIN>;
+        }
+    }
 }
 
 
@@ -835,16 +870,16 @@ sub getLibTypes($$$$$$$$) {
         my $response = prompt("(y)es or (n)o", $default);
         
         if (uc($response) =~ /^(Y|YES)$/)  {
-            $staticlib_too = "y";
+            $staticlib_too = "Y";
         } elsif (uc($response) =~ /^(N|NO)$/)  {
-            $staticlib_too = "n";
+            $staticlib_too = "N";
         } else {
             print("'$response' isn't one of the choices.  \n" .
               "You must choose 'yes' or 'no' (or 'y' or 'n').\n");
             exit 12;
         }
     } else {
-        $staticlib_too = "n";
+        $staticlib_too = "N";
     }
     print("\n");
 
@@ -947,6 +982,7 @@ sub getInttypes($) {
 }
 
 
+
 sub getInt64($$) {
 
     my ($inttypes_h, $haveInt64R) = @_;
@@ -977,6 +1013,85 @@ sub getInt64($$) {
         print("\n");
     } else {
         $$haveInt64R = "N";
+    }
+}
+
+
+
+sub determineSseCapability($) {
+
+    my ($haveEmmintrinR) = @_;
+
+    if (defined($testCc)) {
+
+        print("(Doing test compiles to determine if your compiler has SSE " .
+              "intrinsics -- ignore errors)\n");
+
+        my $cflags = testCflags();
+
+        my $works;
+
+        my @cSourceCode = (
+                           "#include <emmintrin.h>\n",
+                           );
+            
+        testCompile($cflags, \@cSourceCode, \my $success);
+            
+        if ($success) {
+            print("It does.\n");
+            $$haveEmmintrinR = $TRUE;
+        } else {
+            print("It does not.  Programs will not exploit fast SSE " .
+                  "instructions.\n");
+            $$haveEmmintrinR = $FALSE;
+        }
+        print("\n");
+    } else {
+        # We conservatively estimate the facility isn't there
+        $$haveEmmintrinR = $FALSE;
+    }
+}
+
+
+
+sub getSse($) {
+
+    my ($wantSseR) = @_;
+
+    determineSseCapability(\my $haveEmmintrin);
+
+    my $gotit;
+
+    print("Use SSE instructions?\n");
+    print("\n");
+
+    my $default = $haveEmmintrin ? "y" : "n";
+
+    $$wantSseR = promptYesNo($default);
+
+    # Another complication in the SSE world is that GNU compiler options
+    # -msse, -msse2, and -march=xxx affect whether the compiler can or will
+    # generate the instructions.  When compiling for older processors, the
+    # default for these options is negative ; for newer processors, it is
+    # affirmative.  -[no]msse2 determines whether macro __SSE2__ macro is
+    # defined.  If it is not, #include <emmintrins.h> fails (<emmintrins.h>
+    # checks __SSE2__.
+
+    # The Netpbm build does not mess with these compiler options.  If the
+    # user wants something other than the default, he can put it in CFLAGS
+    # in config.mk manually or on the make command line on in CFLAGS_PERSONAL.
+}
+
+
+sub getIcon($$) {
+
+    my ($platform, $wantIconR) = @_;
+
+    if ($platform eq 'WINDOWS') {
+        print("Include an icon in each executable?\n");
+        $$wantIconR = promptYesNo("y");
+    } else {
+        $$wantIconR = $FALSE;
     }
 }
 
@@ -1084,10 +1199,20 @@ sub getPngLibrary($@) {
 
     my ($pnglib, $pnghdr_dir);
 
-    if (commandExists('libpng-config')) {
-        # We don't need to ask where Libpng is; there's a 'libpng-config'
-        # That tells exactly how to access it, and the make files will use
-        # that.
+    if (system('pkg-config libpng --exists') == 0) {
+        # We don't need to ask where Libpng is; the Pkg-config database knows
+        # and the make files will use that.
+        #
+        # To limit the confusion when someone tries to use our result in
+        # spite of the fact that 'libpng-config' exists, we assign suggestive
+        # dummy values (just for use in human debugging).
+        $pnglib     = 'USE_PKG_CONFIG.a';
+        $pnghdr_dir = 'USE_PKG_CONFIG.a';
+    } elsif (commandExists('libpng-config')) {
+        # As with Pkg-config above, we can find out how to access the
+        # library by invoking a 'libpng-config' command.
+        $pnglib     = 'USE_LIBPNG-CONFIG.a';
+        $pnghdr_dir = 'USE_LIBPNG-CONFIG.a';
     } else {
         {
             my $default = "libpng" . libSuffix($platform);
@@ -1172,6 +1297,12 @@ sub getX11Library($@) {
     if (system('pkg-config x11 --exists') == 0) {
         # We don't need to ask where X libraries are; pkg-config knows and the
         # make files will use that.
+        #
+        # To limit the confusion when someone tries to use our result in
+        # spite of the fact that 'libpng-config' exists, we assign suggestive
+        # dummy values (just for use in human debugging).
+        $x11lib     = 'USE_PKGCONFIG.a';
+        $x11hdr_dir = 'USE_PKGCONFIG.a';
     } else {
         {
             my $default;
@@ -1376,14 +1507,52 @@ sub gnuOptimizeOpt($) {
 
 
 
+sub wnostrictoverflowWorks($) {
+    my ($gccCommandName) = @_;
+
+    my ($cFile, $cFileName) = tempFile(".c");
+
+    print $cFile "int x;";
+    
+    my $compileCommand =
+        "$gccCommandName -c -o /dev/null -Wno-strict-overflow $cFileName";
+    print("Doing test compile to see if -Wno-strict-overflow works: "
+          . "$compileCommand\n");
+    my $rc = system($compileCommand);
+    
+    unlink($cFileName);
+    close($cFile);
+
+    return ($rc == 0);
+}
+
+
+
 sub gnuCflags($) {
     my ($gccCommandName) = @_;
 
-    return("CFLAGS = " . gnuOptimizeOpt($gccCommandName) . " -ffast-math " .
-           " -pedantic -fno-common " . 
-           "-Wall -Wno-uninitialized -Wmissing-declarations -Wimplicit " .
-           "-Wwrite-strings -Wmissing-prototypes -Wundef " .
-           "-Wno-unknown-pragmas\n");
+    my $flags;
+
+    $flags = gnuOptimizeOpt($gccCommandName) . " -ffast-math " .
+        " -pedantic -fno-common " . 
+        "-Wall -Wno-uninitialized -Wmissing-declarations -Wimplicit " .
+        "-Wwrite-strings -Wmissing-prototypes -Wundef " .
+        "-Wno-unknown-pragmas ";
+
+    if (wnostrictoverflowWorks($gccCommandName)) {
+        # The compiler generates some optimizations based on the assumption
+        # that you wouldn't code something that can arithmetically overflow,
+        # so adding a positive value to something can only make it bigger.
+        # E.g. if (x + y > x), where y is unsigned, is a no-op.  The compiler
+        # optionally warns when it makes that assumption.  Sometimes, the
+        # compiler is able to do that optimization because of inlining, so the
+        # code per se is not ridiculous, it just becomes superfluous in
+        # context.  That means you can't code around the warning.  Ergo, we
+        # must disable the warning.
+
+        $flags .= '-Wno-strict-overflow';
+    }
+    return("CFLAGS = $flags\n");
 }
 
 
@@ -1555,6 +1724,56 @@ sub testJpegHdr($) {
             if (!$success) {
                 print("\n");
                 printOldJpegWarning();
+            }
+        }
+    }
+}
+
+
+
+sub warnJpegNotInDefaultPath($) {
+    my ($jpegLib) = @_;
+
+    print("You said your JPEG library is '$jpegLib', which says it is "
+          . "in the linker's default search path, but a test link we did "
+          . "failed as if it is not.  If it isn't, the build will fail\n");
+}
+
+
+
+sub testJpegLink($) {
+    my ($jpegLib) = @_;
+#-----------------------------------------------------------------------------
+#  See if we can link the JPEG library with the information user gave us.
+#  $jpegLib is the answer to the "what is your JPEG library" prompt, so
+#  it is either a library file name such as "libjpeg.so", in the linker's
+#  default search path, or it is an absolute path name such as
+#  "/usr/jpeg/lib/libjpeg.so".
+#
+#  We actually test only the default search path case, since users often
+#  incorrectly specify that by taking the default.
+#-----------------------------------------------------------------------------
+    if ($jpegLib =~ m{( lib | cyg ) (.+) \. ( so | a )$}x) {
+        my $libName = $2;
+
+        # It's like "libjpeg.so", so is a library in the default search path.
+        # $libName is "jpeg" in this example.
+
+        # First we test our test tool.  We can do this only with GCC.
+
+        my @emptySource;
+
+        testCompileLink('-nostartfiles', \@emptySource, \my $controlWorked);
+
+        if ($controlWorked) {
+            # The "control" case worked.  Now see if it still works when we add
+            # the JPEG library.
+
+            testCompileLink("-nostartfiles -l$libName", \@emptySource,
+                            \my $workedWithJpeg);
+
+            if (!$workedWithJpeg) {
+                warnJpegNotInDefaultPath($jpegLib);
             }
         }
     }
@@ -1828,6 +2047,8 @@ sub testConfiguration($$$$$$) {
 
     if (defined($jpeglib)) {
         testJpegHdr($jpeghdr_dir);
+
+        testJpegLink($jpeglib);
     }
     if (defined($pnglib) && defined($zlib)) {
         testPngHdr($pnghdr_dir, $zhdr_dir);
@@ -1898,6 +2119,10 @@ if ($platform eq "NONE") {
     exit;
 }
 
+if ($platform eq 'WINDOWS') {
+    warnMingwXopenSource($subplatform);
+}
+
 getCompiler($platform, $subplatform, \my $compiler);
 
 getLinker($platform, $compiler, \my $baseLinker, \my $linkViaCompiler);
@@ -1959,7 +2184,11 @@ getInttypes(\my $inttypesHeaderFile);
 
 getInt64($inttypesHeaderFile, \my $haveInt64);
 
+getSse(\my $wantSse);
+
 findProcessManagement(\my $dontHaveProcessMgmt);
+
+getIcon($platform, \my $wantIcon);
 
 #******************************************************************************
 #
@@ -2006,8 +2235,8 @@ my ($linuxsvgalib, $linuxsvgahdr_dir) = getLinuxsvgaLibrary($platform);
 
 print("\n");
 
-# We should add the JBIG and URT libraries here too.  They're a little
-# more complicated because there are versions shipped with Netpbm.
+# We should add the URT, JBIG, and Jasper libraries here too.  They're a
+# little more complicated because there are versions shipped with Netpbm.
 
 
 #******************************************************************************
@@ -2220,7 +2449,7 @@ if ($platform eq "GNU") {
     # only Ppmtompeg and it isn't clear that using long instead of int is
     # ever right anyway.
 
-    push(@config_mk, "OMIT_NETWORK = y\n");
+    push(@config_mk, "OMIT_NETWORK = Y\n");
     push(@config_mk, "LINKER_CAN_DO_EXPLICIT_LIBRARY=Y\n");
 } elsif ($platform eq "IRIX") {
 #    push(@config_mk, "INSTALL = install\n");
@@ -2234,7 +2463,7 @@ if ($platform eq "GNU") {
         makeCompilerGcc(\@config_mk);
     }
     push(@config_mk, "EXE = .exe\n");
-    push(@config_mk, "OMIT_NETWORK = y\n");
+    push(@config_mk, "OMIT_NETWORK = Y\n");
 #    # Though it may not have the link as "ginstall", "install" in a Windows
 #    # Unix environment is usually GNU install.
 #    my $ginstall_result = `ginstall --version 2>/dev/null`;
@@ -2248,6 +2477,9 @@ if ($platform eq "GNU") {
          '-shared -Wl,--image-base=0x10000000 -Wl,--enable-auto-import', "\n");
     if ($subplatform ne "cygwin") {
         push(@config_mk, "MSVCRT = Y\n");
+    }
+    if ($wantIcon) {
+        push(@config_mk, 'WINICON_OBJECT = $(BUILDDIR)/icon/netpbm.o', "\n");
     }
 } elsif ($platform eq "BEOS") {
     push(@config_mk, "LDSHLIB = -nostart\n");
@@ -2383,6 +2615,10 @@ if ($inttypesHeaderFile ne '<inttypes.h>') {
 
 if ($haveInt64 ne 'Y') {
     push(@config_mk, "HAVE_INT64 = $haveInt64\n");
+}
+
+if ($wantSse) {
+    push(@config_mk, "WANT_SSE = Y\n");
 }
 
 if ($dontHaveProcessMgmt) {

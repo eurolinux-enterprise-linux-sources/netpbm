@@ -1,8 +1,9 @@
 #! /bin/bash
 # This script tests: pnmcrop pnmmargin
-# Also requires: 
+# Also requires: pnmpad
 
-${PBM_TESTPREFIX}pnmmargin -white 10 testimg.ppm | \
-  ${PBM_TESTPREFIX}pnmcrop | cksum
-${PBM_TESTPREFIX}pnmmargin -white 10 testgrid.pbm | \
-  ${PBM_TESTPREFIX}pnmcrop | cksum
+
+pnmmargin -white 10 testimg.ppm | \
+  pnmcrop | cksum
+pnmmargin -white 10 testgrid.pbm | \
+  pnmcrop | cksum

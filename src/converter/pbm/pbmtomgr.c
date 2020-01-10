@@ -6,8 +6,11 @@
    ftp://sunsite.unc.edu/pub/Linux/apps/MGR/!INDEX.html
 */
 
+#include <assert.h>
 #include "pbm.h"
 #include "mgr.h"
+
+
 
 static void
 putinit(unsigned int const rows,
@@ -15,6 +18,10 @@ putinit(unsigned int const rows,
 
     struct b_header head;
     size_t writtenCount;
+
+    /* Because of argument restrictions: maximum dimensions: */
+    assert((rows & 0xfff) == rows);
+    assert((cols & 0xfff) == cols);
 
     head.magic[0] = 'y';
     head.magic[1] = 'z';
@@ -33,7 +40,7 @@ putinit(unsigned int const rows,
 
 int
 main(int argc,
-     char * argv[]) {
+     const char * argv[]) {
 
     FILE * ifP;
     unsigned char * bitrow;
@@ -43,13 +50,11 @@ main(int argc,
     unsigned int row;
     unsigned int bytesPerRow;
         /* Number of packed bytes (8 columns per byte) in a row. */
-    unsigned int padright;
-        /* Number of columns added to the right of each row to get up to
-           a multiple of 8, i.e. an integral number of packed bytes.
-        */
     const char * inputFileName;
+    unsigned int const maxDimension = 4095;
+        /* Dimensions are 2 characters of the header -- 12 bits */
 
-    pbm_init(&argc, argv);
+    pm_proginit(&argc, argv);
 
     if (argc-1 > 1)
         pm_error("Too many arguments (%u).  "
@@ -62,10 +67,13 @@ main(int argc,
     ifP = pm_openr(inputFileName);
 
     pbm_readpbminit(ifP, &cols, &rows, &format);
+    if (cols > maxDimension)
+        pm_error("Image width too large: %u (max: %u)", cols, maxDimension);
+    if (rows > maxDimension)
+        pm_error("Image height too large: %u (max: %u)", rows, maxDimension);
     
     bitrow = pbm_allocrow_packed(cols);
     bytesPerRow = pbm_packed_bytes(cols);
-    padright = bytesPerRow * 8 - cols;
 
     putinit(rows, cols);
     
@@ -76,11 +84,7 @@ main(int argc,
         size_t bytesWritten;
 
         pbm_readpbmrow_packed(ifP, bitrow, cols, format);
-        
-        if (padright > 0) {
-            bitrow[bytesPerRow-1] >>= padright;
-            bitrow[bytesPerRow-1] <<= padright;
-        }
+        pbm_cleanrowend_packed(bitrow, cols);
 
         bytesWritten = fwrite(bitrow, 1, bytesPerRow, stdout);
         if (bytesWritten != bytesPerRow )

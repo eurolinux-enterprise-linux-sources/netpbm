@@ -1,18 +1,6 @@
-diff -up netpbm-10.35.58/converter/pbm/pbmtoepson.c.docfix netpbm-10.35.58/converter/pbm/pbmtoepson.c
---- netpbm-10.35.58/converter/pbm/pbmtoepson.c.docfix	2009-01-19 09:24:03.000000000 +0100
-+++ netpbm-10.35.58/converter/pbm/pbmtoepson.c	2009-04-15 09:10:52.000000000 +0200
-@@ -74,7 +74,7 @@ parseCommandLine(int                 arg
-             &dpiSpec,                    0);
-     OPTENT3(0, "adjacent",   OPT_FLAG,   NULL,
-             &adjacentSpec,                    0);
--    OPTENT3(0, "nonadjacent",   OPT_FLAG,   NULL,
-+    OPTENT3(0, "noadjacent",   OPT_FLAG,   NULL,
-             &nonadjacentSpec,                    0);
- 
-     opt.opt_table = option_def;
-diff -up netpbm-10.35.58/userguide/cameratopam.html.docfix netpbm-10.35.58/userguide/cameratopam.html
---- netpbm-10.35.58/userguide/cameratopam.html.docfix	2009-01-19 09:24:18.000000000 +0100
-+++ netpbm-10.35.58/userguide/cameratopam.html	2009-04-15 09:16:16.000000000 +0200
+diff -urNp old/userguide/cameratopam.html new/userguide/cameratopam.html
+--- old/userguide/cameratopam.html	2017-09-05 09:05:16.000000000 +0200
++++ new/userguide/cameratopam.html	2017-09-05 13:16:33.622352535 +0200
 @@ -25,10 +25,10 @@ cameratopam - convert raw camera image t
  [<b>-balance_camera</b>]
  [<b>-red_scale=</b><i>float</i>]
@@ -35,7 +23,7 @@ diff -up netpbm-10.35.58/userguide/cameratopam.html.docfix netpbm-10.35.58/userg
  
  <dd>Change the output brightness.  Default is 1.0.
  
-@@ -114,14 +114,14 @@ channels by these values.  Both default 
+@@ -114,14 +114,14 @@ channels by these values.  Both default
  
  <dd>By default, <b>cameratoapm</b> clips all colors to prevent pink
  hues in the highlights.  Combine this option with
@@ -52,9 +40,9 @@ diff -up netpbm-10.35.58/userguide/cameratopam.html.docfix netpbm-10.35.58/userg
  
  <dd>For cameras based on the Fuji Super CCD SR, this option causes
  <b>cameratopam</b> to use the secondary sensors, in effect
-diff -up netpbm-10.35.58/userguide/fiascotopnm.html.docfix netpbm-10.35.58/userguide/fiascotopnm.html
---- netpbm-10.35.58/userguide/fiascotopnm.html.docfix	2009-01-19 09:24:18.000000000 +0100
-+++ netpbm-10.35.58/userguide/fiascotopnm.html	2009-04-15 09:10:52.000000000 +0200
+diff -urNp old/userguide/fiascotopnm.html new/userguide/fiascotopnm.html
+--- old/userguide/fiascotopnm.html	2017-09-05 09:05:16.000000000 +0200
++++ new/userguide/fiascotopnm.html	2017-09-05 13:32:51.810458154 +0200
 @@ -51,7 +51,7 @@ the output file(s) are written to the fi
  this list. Otherwise, the current directory is used to store the
  output file(s).
@@ -73,26 +61,26 @@ diff -up netpbm-10.35.58/userguide/fiascotopnm.html.docfix netpbm-10.35.58/userg
  <DD>
  Set number of frames per second to <I>N</I>. When using this option,
  the frame rate specified in the FIASCO file is overridden.
-@@ -109,13 +109,9 @@ following methods (in the specified orde
+@@ -113,13 +113,8 @@ following methods (in the specified orde
  <LI>--config=<I>name</I>
  </OL>
  
 -<DT><B>-h</B>, <B>--info</B>
-+<DT><B>-h</B>, <B>--help</B>
- <DD>
+-<DD>
 -Print brief help, then exit.
 -
 -<DT><B>-H</B>, <B>--help</B>
 -<DD>
 -Print detailed help, then exit.
++<DT><B>-h</B>, <B>--help</B>
 +Print help, then exit.
  
  </DL>
  
-diff -up netpbm-10.47.12/userguide/pamperspective.html.docfix netpbm-10.47.12/userguide/pamperspective.html
---- netpbm-10.47.12/userguide/pamperspective.html.docfix        2010-04-27 15:48:09.000000000 +0200
-+++ netpbm-10.47.12/userguide/pamperspective.html       2010-05-03 14:16:26.064266675 +0200
-@@ -220,7 +220,7 @@ default rectangle as the &quot;frame.&qu
+diff -urNp old/userguide/pamperspective.html new/userguide/pamperspective.html
+--- old/userguide/pamperspective.html	2017-09-05 09:05:16.000000000 +0200
++++ new/userguide/pamperspective.html	2017-09-05 13:23:15.869997105 +0200
+@@ -220,7 +220,7 @@ default rectangle as the "frame." The vi
  a rectangle the axes of which are parallel to those of the frame.
  
  <p>The frame options are additive.  All the parts of the image
@@ -101,9 +89,21 @@ diff -up netpbm-10.47.12/userguide/pamperspective.html.docfix netpbm-10.47.12/us
  <b>--include</b> (or their defaults) are in the visible part.  The
  visible part is the smallest possible rectangle that contains the
  parts specified those three ways.
-diff -up netpbm-10.47.12/userguide/pbmtoepson.html.docfix netpbm-10.47.12/userguide/pbmtoepson.html
---- netpbm-10.47.12/userguide/pbmtoepson.html.docfix    2010-04-27 15:48:09.000000000 +0200
-+++ netpbm-10.47.12/userguide/pbmtoepson.html   2010-05-03 14:34:03.571141020 +0200
+diff -urNp old/converter/pbm/pbmtoepson.c new/converter/pbm/pbmtoepson.c
+--- old/converter/pbm/pbmtoepson.c	2018-01-04 14:26:14.740024843 +0100
++++ new/converter/pbm/pbmtoepson.c	2018-01-04 14:28:47.970518766 +0100
+@@ -75,7 +75,7 @@ parseCommandLine(int                  ar
+             &dpiSpec,                         0);
+     OPTENT3(0, "adjacent",     OPT_FLAG,     NULL,
+             &adjacentSpec,                    0);
+-    OPTENT3(0, "nonadjacent",  OPT_FLAG,     NULL,
++    OPTENT3(0, "noadjacent",  OPT_FLAG,     NULL,
+             &nonadjacentSpec,                 0);
+ 
+     opt.opt_table = option_def;
+diff -urNp old/userguide/pbmtoepson.html new/userguide/pbmtoepson.html
+--- old/userguide/pbmtoepson.html	2018-01-04 14:26:14.586024719 +0100
++++ new/userguide/pbmtoepson.html	2018-01-04 14:27:56.466847698 +0100
 @@ -18,7 +18,7 @@ pbmtoepson - convert a PBM image into Ep
  [<b>-dpi=</b><i>n</i>]
  [<b>-protocol=</b>{<b>escp9</b>|<B>escp</B>}]
@@ -120,5 +120,5 @@ diff -up netpbm-10.47.12/userguide/pbmtoepson.html.docfix netpbm-10.47.12/usergu
 -<dt><b>-nonadjacent</b>
 +<dt><b>-noadjacent</b>
  
- <dd>These options determine whether the output uses &quot;adjacent dot
- printing&quot; or not, whatever that is.
+ <dd>These options determine whether the output uses "adjacent dot
+ printing" or not, whatever that is.

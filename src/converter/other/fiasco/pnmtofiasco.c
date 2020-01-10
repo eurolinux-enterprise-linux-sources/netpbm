@@ -3,8 +3,8 @@
  *
  *  Written by:     Ullrich Hafner
  *      
- *  This file is part of FIASCO («F»ractal «I»mage «A»nd «S»equence «CO»dec)
- *  Copyright (C) 1994-2000 Ullrich Hafner <hafner@bigfoot.de>
+ *  This file is part of FIASCO (Fractal Image And Sequence COdec)
+ *  Copyright (C) 1994-2000 Ullrich Hafner
  */
  
 /*
@@ -170,7 +170,7 @@ main (int argc, char **argv)
       return 0;
    else
    {
-      fprintf (stderr, fiasco_get_error_message ());
+       fprintf (stderr, "%s", fiasco_get_error_message ());
       fprintf (stderr, "\n");
       return 1;
    }

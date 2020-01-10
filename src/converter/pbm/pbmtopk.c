@@ -1,9 +1,15 @@
 /*
   pbmtopk, adapted from "pxtopk.c by tomas rokicki" by AJCD 1/8/90
   
-  compile with: cc -o pbmtopk pbmtopk.c -lm -lpbm
+  References (retrieved May 31 2015):
+  Packed (PK) Font File Format 
+  https://www.tug.org/TUGboat/tb06-3/tb13pk.pdf
+
+  Tex Font Metric Files (TFM)
+  https://www.tug.org/TUGboat/tb06-1/tb11gf.pdf
 */
 
+#define _DEFAULT_SOURCE 1  /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE 1      /* Make sure strdup() is in string.h */
 #define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
 
@@ -25,6 +31,29 @@
 #define MAXITALICTAB 64
 #define MAXPARAMS 30
 #define NAMELENGTH 80
+
+/*-----------------------------------------------------------------------
+Macros to handle fixed point numbers
+
+This program uses uses fixed-point numbers to store data where
+normally a floating-point data type (float or double) would be
+employed.
+
+Numbers that contain fractions are stored as signed integers.
+The 20 least-significant bits are for the fractional part, the rest
+(12 bits assuming that int is 32 bit) are for the integer part.
+The technical term for this is "Q20" or "Q12.20" notation.
+
+Float/double data is converted to Q20 fixed point by multiplying
+by 2^20 (= 1048576).  The opposite conversion is conducted by
+dividing by 2^20.
+
+The Q20 data must be within the range -16 < r < 16.  The reason
+behind this restriction is unclear.  The program generally writes
+Q20 data to the output files in 32 bits.  (Exception: in function
+shipchar() there is a provision to write Q20 data in 24 bits,
+provided that 24 bits is sufficient.)
+---------------------------------------------------------------------*/
 
 #define fixword(d) ((int)((double)(d)*1048576))
 #define unfixword(f) ((double)(f) / 1048576)
@@ -854,11 +883,17 @@ main(int argc, char *argv[]) {
     initialize_pk() ;
    
     if (--argc < 1) pm_usage(usage) ;
-    strcpy(pkname, *++argv) ;
+    ++argv;
+    if(strlen(*argv) + 4 > NAMELENGTH)
+        pm_error("pkname is too long");
+    strcpy(pkname, *argv) ;
     pbmtopk_add_suffix(pkname, ".pk") ;
    
-    if (--argc < 1) pm_usage(usage) ;
-    strcpy(tfmname, *++argv) ;
+    if (--argc < 1) pm_usage(usage);
+    ++argv;
+    if(strlen(*argv) + 4 > NAMELENGTH)
+        pm_error("tfmname is too long");
+    strcpy(tfmname, *argv) ;
     pbmtopk_add_suffix(tfmname, ".tfm") ;
    
     if (--argc < 1) pm_usage(usage) ;

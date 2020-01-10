@@ -7,12 +7,12 @@ VPATH=.:$(SRCDIR)/$(SUBDIR)
 
 include $(BUILDDIR)/config.mk
 
-TEST_PKGCONFIG_LIBXML2 = if pkg-config libxml-2.0; then echo exists; fi
+TEST_PKGCONFIG_LIBXML2 = if $(PKG_CONFIG) libxml-2.0; then echo exists; fi
 
 ifneq ($(shell $(TEST_PKGCONFIG_LIBXML2)),)
   # pkg-config libxml2 works on this system
-  XML2_LIBS = $(shell pkg-config libxml-2.0 --libs)
-  XML2_CFLAGS = $(shell pkg-config libxml-2.0 --cflags)
+  XML2_LIBS = $(shell $(PKG_CONFIG) libxml-2.0 --libs)
+  XML2_CFLAGS = $(shell $(PKG_CONFIG) libxml-2.0 --cflags)
 else
   ifeq ($(shell xml2-config --version),)
     XML2_LIBS=NONE
@@ -34,19 +34,19 @@ ifneq ($(TIFFLIB),NONE)
   endif
 endif
 
-TEST_PKGCONFIG_LIBPNG = if pkg-config libpng$(PNGVER); then echo exists; fi
+TEST_PKGCONFIG_LIBPNG = if $(PKG_CONFIG) libpng$(PNGVER); then echo exists; fi
 
 ifneq ($(shell $(TEST_PKGCONFIG_LIBPNG)),)
   # pkg-config libpng works on this system
   HAVE_PNGLIB = Y
-  EXTERN_INCLUDES += $(shell pkg-config libpng$(PNGVER) --cflags)
+  EXTERN_INCLUDES += $(shell $(PKG_CONFIG) libpng$(PNGVER) --cflags)
 else
   ifneq ($(shell libpng$(PNGVER)-config --version),)
     # No pkg-config, but we have libpng-config on this system
     HAVE_PNGLIB = Y
     EXTERN_INCLUDES += $(shell libpng$(PNGVER)-config --cflags)
   else
-    # System can't tell use where libpng is; use stuff from config.mk
+    # System can't tell us where libpng is; use stuff from config.mk
     ifneq ($(PNGLIB),NONE)
       HAVE_PNGLIB = Y
       ifneq ($(PNGHDR_DIR)x,x)
@@ -117,44 +117,37 @@ PORTBINARIES =  avstopam bmptopnm fitstopnm \
 		gemtopnm giftopnm hdifftopam infotopam \
 		pamtoavs pamtodjvurle pamtofits pamtogif \
 		pamtohdiff pamtohtmltbl pamtompfont pamtooctaveimg \
-		pamtopam pamtopfm pamtopnm pamtouil \
-		pamtoxvmini \
-		pbmtopgm pfmtopam \
+		pamtopam pamtopdbimg pamtopfm pamtopnm pamtosrf pamtouil \
+		pamtowinicon pamtoxvmini \
+		pbmtopgm pdbimgtopam pfmtopam \
 	        pgmtopbm pgmtoppm ppmtopgm pnmtoddif \
-		pnmtopclxl \
+		pnmtopclxl pnmtorast \
 		pnmtosgi pnmtosir pamtotga pnmtoxwd \
-		rlatopam sgitopnm sirtopnm sunicontopnm xwdtopnm zeisstopnm
-
-BINARIES = \
-  $(PORTBINARIES) \
-  pamtopdbimg \
-  pamtosrf \
-  pdbimgtopam \
-  pnmtorast \
-  rasttopnm \
-  srftopam \
+		rasttopnm rlatopam sgitopnm sirtopnm srftopam sunicontopnm \
+		winicontopam xwdtopnm yuy2topam zeisstopnm
 
 ifneq ($(DONT_HAVE_PROCESS_MGMT),Y)
-  PORTBINARIES += pstopnm
-  BINARIES += pnmtops
+  PORTBINARIES += pstopnm pnmtops
 endif
 
 ifeq ($(HAVE_PNGLIB),Y)
-  BINARIES += pnmtopng pngtopam pamrgbatopng
+  PORTBINARIES += pamtopng pnmtopng pngtopam
 endif
 ifneq ($(JPEGLIB),NONE)
-  BINARIES += jpegtopnm pnmtojpeg
+  PORTBINARIES += jpegtopnm pnmtojpeg
 endif
 ifneq ($(TIFF_PREREQ_MISSING),Y)
-  BINARIES += tifftopnm pamtotiff pnmtotiffcmyk
+  PORTBINARIES += tifftopnm pamtotiff pnmtotiffcmyk
 endif
 ifneq ($(URTLIB),NONE)
-  BINARIES += rletopnm pnmtorle
+  PORTBINARIES += rletopnm pnmtorle
 endif
 
 ifneq ($(XML2_LIBS),NONE)
-  BINARIES += svgtopam
+  PORTBINARIES += svgtopam
 endif 
+
+BINARIES = $(PORTBINARIES)
 
 MERGEBINARIES = $(BINARIES)
 
@@ -188,16 +181,18 @@ else
   LIBOPTR =
 endif
 
-LIBOPTS_TIFF = $(shell $(LIBOPT) $(NETPBMLIB) \
+LIBOPTS_TIFF = $(shell $(LIBOPT) \
   $(LIBOPTR) $(TIFFLIB) $(TIFFLIB_EXTRALIBS))
 
-tifftopnm pamtotiff pnmtotiffcmyk: %: %.o tiff.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o tiff.o \
-	  $(LIBOPTS_TIFF) $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+tifftopnm pamtotiff pnmtotiffcmyk: tiff.o
+tifftopnm pamtotiff pnmtotiffcmyk: ADDL_OBJECTS = tiff.o
+tifftopnm pamtotiff pnmtotiffcmyk: \
+  LDFLAGS_TARGET = \
+ $(shell $(LIBOPT)  $(LIBOPTR) $(TIFFLIB) $(TIFFLIB_EXTRALIBS))
 
 ifneq ($(shell $(TEST_PKGCONFIG_LIBPNG)),)
   # pkg-config libpng works on this system
-  PNGLIB_LIBOPTS = $(shell pkg-config libpng$(PNGVER) --libs)
+  PNGLIB_LIBOPTS = $(shell $(PKG_CONFIG) libpng$(PNGVER) --libs)
 else
   ifneq ($(shell libpng$(PNGVER)-config --version),)
     # No pkg-config, but we have libpng-config on this system
@@ -208,66 +203,46 @@ else
   endif
 endif
 
-pngtopam: %: %.o pngx.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o pngx.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB)) \
-	  $(PNGLIB_LIBOPTS) $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+pngtopam: pngx.o
+pngtopam: ADDL_OBJECTS = pngx.o
+pngtopam: LDFLAGS_TARGET = $(PNGLIB_LIBOPTS)
 
-pnmtopng: %: %.o pngx.o pngtxt.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o pngx.o pngtxt.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB)) \
-	  $(PNGLIB_LIBOPTS) $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+pamtopng: pngx.o pngtxt.o
+pamtopng: ADDL_OBJECTS = pngx.o pngtxt.o
+pamtopng: LDFLAGS_TARGET = $(PNGLIB_LIBOPTS)
 
-pamrgbatopng: %: %.o pngx.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o pngx.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB)) $(PNGLIB_LIBOPTS) \
-	  $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+pnmtopng: pngx.o pngtxt.o
+pnmtopng: ADDL_OBJECTS = pngx.o pngtxt.o
+pnmtopng: LDFLAGS_TARGET = $(PNGLIB_LIBOPTS)
 
-jpegtopnm: %: %.o jpegdatasource.o exif.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $< jpegdatasource.o exif.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB) $(LIBOPTR) $(JPEGLIB)) \
-	  $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD) 
+jpegtopnm: jpegdatasource.o exif.o
+jpegtopnm: ADDL_OBJECTS = jpegdatasource.o exif.o
+jpegtopnm: LDFLAGS_TARGET = $(shell $(LIBOPT) $(LIBOPTR) $(JPEGLIB))
 
-pnmtojpeg: %: %.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB) $(LIBOPTR) $(JPEGLIB)) \
-	  $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+srftopam pamtosrf: srf.o
+srftopam pamtosrf: ADDL_OBJECTS = srf.o
 
-srftopam pamtosrf: %: %.o srf.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o srf.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB)) \
-	  $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+pnmtojpeg: LDFLAGS_TARGET = $(shell $(LIBOPT) $(LIBOPTR) $(JPEGLIB))
 
-svgtopam: %: %.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB) $(LIBOPTR)) \
-	  $(XML2_LIBS) $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+svgtopam: LDFLAGS_TARGET = $(XML2_LIBS)
 
 # If URTLIB is BUNDLED_URTLIB, then we're responsible for building it, which
 # means it needs to be a dependency:
 ifeq ($(URTLIB), $(BUNDLED_URTLIB))
-  URTLIBDEP = $(URTLIB)
+rletopnm pnmtorle: $(URTLIB)
 endif
 
-rletopnm pnmtorle: %: %.o $(NETPBMLIB) $(URTLIBDEP) $(LIBOPT)
-	$(LD) -o $@ $@.o \
-	  $(shell $(LIBOPT) $(URTLIB) $(NETPBMLIB)) \
-	  $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+rletopnm pnmtorle: LDFLAGS_TARGET = $(shell $(LIBOPT) $(URTLIB))
 
-pnmtops: %: %.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB) $(PNMTOPS_ZLIB_OPT)) \
-	  $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+pnmtops: LDFLAGS_TARGET = $(shell $(LIBOPT) $(PNMTOPS_ZLIB_OPT))
 
-pnmtorast rasttopnm: %: %.o rast.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o rast.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB)) \
-	  $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+pnmtorast rasttopnm: rast.o
+pnmtorast rasttopnm: ADDL_OBJECTS = rast.o
 
-pdbimgtopam pamtopdbimg: %: %.o ipdb.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o ipdb.o \
-	  $(shell $(LIBOPT) $(NETPBMLIB)) \
-	  $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(RPATH) $(LADD)
+pdbimgtopam pamtopdbimg: ipdb.o
+pdbimgtopam pamtopdbimg: ADDL_OBJECTS = ipdb.o
+
+# Declare dependencies on created header files (symbolic links, actually).
 
 bmptopnm.o bmptopnm.o2: bmp.h
 
@@ -279,37 +254,45 @@ install.bin.local: $(PKGDIR)/bin
 # Remember that $(SYMLINK) might just be a copy command.
 # backward compatibility: program used to be named pnmnoraw
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) pnmtoplainpnm pnmnoraw
+	$(SYMLINK) pnmtoplainpnm$(EXE) pnmnoraw$(EXE)
 # backward compatibility: program used to be gemtopbm
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) gemtopnm$(EXE) gemtopbm
+	$(SYMLINK) gemtopnm$(EXE) gemtopbm$(EXE)
 # In October 2001, pnmtojpeg replaced ppmtojpeg
 ifneq ($(JPEGLIB),NONE)
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) pnmtojpeg$(EXE) ppmtojpeg
+	$(SYMLINK) pnmtojpeg$(EXE) ppmtojpeg$(EXE)
 endif
 # In March 2002, bmptopnm replaced bmptoppm
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) bmptopnm$(EXE) bmptoppm
+	$(SYMLINK) bmptopnm$(EXE) bmptoppm$(EXE)
 # In May 2002, pamtouil replaced ppmtouil
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) pamtouil$(EXE) ppmtouil
+	$(SYMLINK) pamtouil$(EXE) ppmtouil$(EXE)
+# In July 2002, pamtotga replaced ppmtotga
+	cd $(PKGDIR)/bin ; \
+	$(SYMLINK) pamtotga$(EXE) ppmtotga$(EXE)
 # In March 2005, we realized that pamtopnm obviates pnmtopnm
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) pamtopnm$(EXE) pnmtopnm
+	$(SYMLINK) pamtopnm$(EXE) pnmtopnm$(EXE)
 # In October 2005, pamtofits replaced pnmtofits
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) pamtofits$(EXE) pnmtofits
+	$(SYMLINK) pamtofits$(EXE) pnmtofits$(EXE)
 ifneq ($(TIFF_PREREQ_MISSING),Y)
 # In October 2005, pamtotiff replaced pnmtotiff
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) pamtotiff$(EXE) pnmtotiff
+	$(SYMLINK) pamtotiff$(EXE) pnmtotiff$(EXE)
 endif
 ifeq ($(HAVE_PNGLIB),Y)
 # In September 2009, pngtopam replaced pngtopnm
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) pngtopam$(EXE) pngtopnm
+	$(SYMLINK) pngtopam$(EXE) pngtopnm$(EXE)
 endif
 # In December 2010, sunicontopnm replaced icontopbm
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) sunicontopnm icontopbm
+	$(SYMLINK) sunicontopnm$(EXE) icontopbm$(EXE)
+ifeq ($(HAVE_PNGLIB),Y)
+# In June 2015, pamtopng replaced pamrgbapng
+	cd $(PKGDIR)/bin ; \
+	$(SYMLINK) pamtopng$(EXE) pamrgbatopng$(EXE)
+endif

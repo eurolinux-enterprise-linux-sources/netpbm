@@ -20,9 +20,11 @@
 
 */
 
+#define _DEFAULT_SOURCE 1  /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE 1      /* Make sure strdup() is in string.h */
 #define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
 
+#include <assert.h>
 #include <string.h>
 
 #include "pm_c_util.h"
@@ -35,7 +37,7 @@
 
 enum xbmVersion { X10, X11 };
 
-struct cmdlineInfo {
+struct CmdlineInfo {
     /* All the information the user supplied in the command line,
        in a form easy for the program to use.
     */
@@ -46,8 +48,8 @@ struct cmdlineInfo {
 
 static void
 parseCommandLine(int                 argc, 
-                 char **             argv,
-                 struct cmdlineInfo *cmdlineP ) {
+                 const char **       argv,
+                 struct CmdlineInfo *cmdlineP ) {
 /*----------------------------------------------------------------------------
    Parse program command line described in Unix standard form by argc
    and argv.  Return the information in the options as *cmdlineP.  
@@ -58,7 +60,7 @@ parseCommandLine(int                 argc,
    Note that the strings we return are stored in the storage that
    was passed to us as the argv array.  We also trash *argv.
 -----------------------------------------------------------------------------*/
-    optEntry *option_def;
+    optEntry * option_def;
     /* Instructions to pm_optParseOptions3 on how to parse our options. */
 
     optStruct3 opt;
@@ -76,7 +78,7 @@ parseCommandLine(int                 argc,
     opt.short_allowed = FALSE;  /* We have no short (old-fashioned) options */
     opt.allowNegNum = FALSE;  /* We have no parms that are negative numbers */
 
-    pm_optParseOptions3( &argc, argv, opt, sizeof(opt), 0);
+    pm_optParseOptions3(&argc, (char **)argv, opt, sizeof(opt), 0);
         /* Uses and sets argc, argv, and some of *cmdlineP and others. */
 
     if (!nameSpec)
@@ -111,6 +113,7 @@ parseCommandLine(int                 argc,
             pm_error("Program takes zero or one argument (filename).  You "
                      "specified %u", argc-1);
     }
+    free(option_def);
 }
 
 
@@ -242,18 +245,22 @@ puttermX10(void) {
 
     unsigned int i;
 
+    assert(itemCnt % 2 == 0);
+
     for (i = 0; i < itemCnt; i += 2) {
         int rc;
+
+        assert(i + 1 < itemCnt);
 
         rc = printf("%s0x%02x%02x%s",
                     (i == 0) ? " " : "",
                     itemBuff[i+1],
                     itemBuff[i], 
-                    (i == itemCnt - 2) ? "};\n" : ",");
+                    (i + 2 >= itemCnt) ? "" : ",");
         if (rc < 0)        
-            pm_error("Error writing end of X10 bitmap raster.  "
+            pm_error("Error writing Item %u at end of X10 bitmap raster.  "
                      "printf() failed with errno %d (%s)",
-                     errno, strerror(errno));
+                     i, errno, strerror(errno));
     }
 }
 
@@ -270,12 +277,12 @@ puttermX11(void) {
         rc = printf("%s0x%02x%s",
                     (i == 0)  ? " " : "",
                     itemBuff[i],
-                    (i == itemCnt - 1) ? "};\n" : ",");
+                    (i + 1 >= itemCnt) ? "" : ",");
 
         if (rc < 0)        
-            pm_error("Error writing end of X11 bitmap raster.  "
+            pm_error("Error writing Item %u at end of X11 bitmap raster.  "
                      "printf() failed with errno %d (%s)",
-                     errno, strerror(errno));
+                     i, errno, strerror(errno));
     }
 }
 
@@ -297,6 +304,17 @@ putterm(void) {
     case X10: puttermX10(); break;
     case X11: puttermX11(); break;
     }
+
+    {
+        int rc;
+
+        rc = printf("};\n");
+
+        if (rc < 0)        
+            pm_error("Error writing end of X11 bitmap raster.  "
+                     "printf() failed with errno %d (%s)",
+                     errno, strerror(errno));
+    }
 }
 
 
@@ -308,8 +326,8 @@ writeXbmHeader(enum xbmVersion const xbmVersion,
                unsigned int    const height,
                FILE *          const ofP) {
 
-    printf("#define %s_width %d\n", name, width);
-    printf("#define %s_height %d\n", name, height);
+    printf("#define %s_width %u\n", name, width);
+    printf("#define %s_height %u\n", name, height);
     printf("static %s %s_bits[] = {\n",
            xbmVersion == X10 ? "short" : "char",
            name);
@@ -326,8 +344,7 @@ convertRaster(FILE *          const ifP,
               enum xbmVersion const xbmVersion) {
               
     unsigned int const bitsPerUnit = xbmVersion == X10 ? 16 : 8;   
-    unsigned int const padright =
-        ((cols + bitsPerUnit - 1 ) / bitsPerUnit) * bitsPerUnit - cols;
+    unsigned int const padright = ROUNDUP(cols, bitsPerUnit) - cols;
         /* Amount of padding to round cols up to the nearest multiple of 
            8 (if x11) or 16 (if x10).
         */
@@ -339,21 +356,17 @@ convertRaster(FILE *          const ifP,
     putinit(xbmVersion);
 
     bitrow = pbm_allocrow_packed(cols + padright);
-    bitrow[bitrowBytes-1] = 0;
     
     for (row = 0; row < rows; ++row) {
-        int const bitrowInBytes = pbm_packed_bytes(cols);
-        int const padrightIn    = bitrowInBytes * 8 - cols;
-
         unsigned int i;
 
         pbm_readpbmrow_packed(ifP, bitrow, cols, format);
+        pbm_cleanrowend_packed(bitrow, cols);
 
-        if (padrightIn > 0) {
-            bitrow[bitrowInBytes - 1] >>= padrightIn;
-            bitrow[bitrowInBytes - 1] <<= padrightIn;
+        if (padright >= 8) {
+            assert(bitrowBytes > 0);
+            bitrow[bitrowBytes-1] = 0x00;
         }
-
         for (i = 0; i < bitrowBytes; ++i)
             putitem(bitrow[i]);
     }
@@ -366,15 +379,15 @@ convertRaster(FILE *          const ifP,
 
 
 int
-main(int    argc,
-     char * argv[]) {
+main(int           argc,
+     const char ** argv) {
 
-    struct cmdlineInfo cmdline; 
+    struct CmdlineInfo cmdline; 
     FILE * ifP;
     int rows, cols, format;
     const char * name;
 
-    pbm_init(&argc, argv);
+    pm_proginit(&argc, argv);
 
     parseCommandLine(argc, argv, &cmdline);
     if (cmdline.name == NULL) 
@@ -395,4 +408,6 @@ main(int    argc,
 
     return 0;
 }
+
+
 

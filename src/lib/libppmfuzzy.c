@@ -5,8 +5,8 @@
   <kenan@unix.ba> in 2006.
 =============================================================================*/
 
-#include "pm_c_util.h"
-#include "nstring.h"
+#include "netpbm/pm_c_util.h"
+#include "netpbm/nstring.h"
 #include "ppm.h"
 
 typedef double fzLog;
@@ -338,7 +338,7 @@ matchBk(pixel     const color,
              );
 
     (*bkMatchP)[BKCOLOR_BROWN]  =
-	fzOr(
+        fzOr(
              fzAnd(fzOr(hueAround015, hueAround360),
                    fzAnd(fzNot(satVeryLow), fzOr(valLow, valMedium))),
              fzAnd(hueAround015, satLow)

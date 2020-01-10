@@ -33,6 +33,7 @@
 **    (base 93 not base 28 -> saves a lot of space for colorful xpms)
 */
 
+#define _DEFAULT_SOURCE /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE   /* Make sure strdup() is in string.h */
 #define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
 
@@ -636,8 +637,10 @@ main(int argc, char *argv[]) {
 
     if (cmdline.hexonly)
         colornameHash = NULL;
+    else if (cmdline.rgb)
+        ppm_readcolornamefile(cmdline.rgb, TRUE, &colornameHash, &colornames);
     else
-        ppm_readcolornamefile(cmdline.rgb, FALSE, &colornameHash, &colornames);
+        ppm_readcolornamefile(NULL, FALSE, &colornameHash, &colornames);
 
     /* Now generate the character-pixel colormap table. */
     genCmap(chv, ncolors, maxval, 

@@ -58,6 +58,7 @@
    the source image, reading the input image through multiple times.
 */
 
+#define _DEFAULT_SOURCE 1  /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE 1      /* Make sure strdup() is in string.h */
 #define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
 
@@ -72,18 +73,11 @@
 #include "nstring.h"
 #include "bitreverse.h"
 
+#include "config.h"  /* Defines SSE_PBM_XY_FLIP */
 #include "flip.h"
 #include "pamflip_sse.h"
 
 enum xformType {LEFTRIGHT, TOPBOTTOM, TRANSPOSE};
-
-#ifndef SIMD_PBM_TRANSPOSITION
-  #if HAVE_GCC_SSE2 && defined(__SSE2__)
-    #define SIMD_PBM_TRANSPOSITION 1
-  #else
-    #define SIMD_PBM_TRANSPOSITION 0
-  #endif
-#endif
 
 static void
 parseXformOpt(const char *     const xformOpt,
@@ -1149,7 +1143,7 @@ transformPbm(struct pam *     const inpamP,
         /* This is a column-for-row type of transformation, which requires
            complex traversal of an in-memory image.
         */
-        if (SIMD_PBM_TRANSPOSITION == 1)
+        if (SSE_PBM_XY_FLIP)
             pamflip_transformRowsToColumnsPbmSse(inpamP, outpamP, xform);
         else
             transformPbmGen(inpamP, outpamP, xform);

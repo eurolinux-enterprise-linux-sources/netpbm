@@ -3,7 +3,7 @@
 <HEAD><TITLE>Pgmmorphconv User Manual</TITLE></HEAD>
 <BODY>
 <H1>pgmmorphconv</H1>
-Updated: 29 October 2002
+Updated: 29 March 2015
 <BR>
 <A HREF="#index">Table Of Contents</A>
 
@@ -14,7 +14,13 @@ pgmmorphconv - perform morphological convolutions: dilation, erosion
 <H2 id="synopsis">SYNOPSIS</H2>
 
 <B>pgmmorphconv</B>
-[ <b>-erode</b> | <b>-dilate</b> | <b>-open</b> | <b>-close</b> ]
+[
+ <b>-erode</b> |
+ <b>-dilate</b> |
+ <b>-open</b> |
+ <b>-close</b> |
+ <b>-gradient</b>
+]
 <I>templatefile</I>
 [<I>pgmfile</I>]
 
@@ -68,6 +74,11 @@ operation.  The <b>-close</b> option causes a dilate first and then an
 erode.  If you specify none of these options, it is the same as
 <b>-dilate</b>.
 
+<p>With <b>-gradient</b>, <b>pgmmorphconv</b> produces an image which is the
+difference between the eroded image and the dilated image.  <b>-gradient</b>
+was new in Netpbm 10.70 (March 2015).
+
+
 <H2 id="seealso">SEE ALSO</H2>
 
 <ul>
@@ -76,11 +87,11 @@ erode.  If you specify none of these options, it is the same as
 <li><B><A HREF="pgm.html">pgm</A></B>
 </ul>
 
-<p>For more information about morphological convolutions, see e.g. 
+<p>For more information about morphological convolutions, see e.g.
 <ul>
 <li><a
 href="http://rugth30.phys.rug.nl/compphys0/2001.htm"> K. Michielsen and
-H. De Raedt, "Integral-Geometry Morphological Image Analysis", 
+H. De Raedt, "Integral-Geometry Morphological Image Analysis",
 Phys. Rep. 347, 461-538 (2001).</a>
 
 <li><a href="http://rugth30.phys.rug.nl/pdf/prechaos.pdf">

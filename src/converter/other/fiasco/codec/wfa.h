@@ -3,8 +3,8 @@
  *
  *  Written by:		Ullrich Hafner
  *		
- *  This file is part of FIASCO («F»ractal «I»mage «A»nd «S»equence «CO»dec)
- *  Copyright (C) 1994-2000 Ullrich Hafner <hafner@bigfoot.de>
+ *  This file is part of FIASCO (Fractal Image And Sequence COdec)
+ *  Copyright (C) 1994-2000 Ullrich Hafner
  */
 
 /*
@@ -19,7 +19,7 @@
 
 #define MAXEDGES  5
 #define MAXSTATES 6000
-#define MAXLABELS 2			/* only bintree supported anymore */
+#define MAXLABELS 2			/* only bintree possible anymore */
 #define MAXLEVEL  22 
 
 #define FIASCO_BINFILE_RELEASE   2

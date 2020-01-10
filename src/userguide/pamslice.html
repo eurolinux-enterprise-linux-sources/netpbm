@@ -42,8 +42,8 @@ input, Plane 0 is red, Plane 1 is green, and Plane 2 is blue.  See the
 specifications of the image formats for details on exactly what these
 numbers mean.
 
-If you want to see all the pixels in a PPM, PGM, or PBM image in ASCII
-decimal, <b>pnmtopnm -plain</b> is a good way to do that.
+<p>If you want to see the entire raster of a Netpbm image, use
+<b>pamtable</b>.
 
 <H2 id="options">OPTIONS</H2>
 
@@ -86,13 +86,13 @@ decimal, <b>pnmtopnm -plain</b> is a good way to do that.
 
 <H2 id="seealso">SEE ALSO</H2>
 
+<A HREF="pamtable.html">pamtable</A>
 <A HREF="pamcut.html">pamcut</A>
 <A HREF="pnmtopnm.html">pnmtopnm</A>
-<A HREF="pamchannel.html">pnmtoplainpnm</A>
+<A HREF="pamchannel.html">pamchannel</A>
 <A HREF="pnm.html">pnm</A>
 
-<a name="history">&nbsp;</a>
-<H2>HISTORY</H2>
+<H2 id="history">HISTORY</H2>
 
 <P><b>pamslice</b> replaced <b>pgmslice</b> in Netpbm 10.3 (June 2002).
 It was backward compatible, but worked on Netpbm images other than PGM and

@@ -4,8 +4,8 @@
  *  Written by:		Stefan Frank
  *			Ullrich Hafner
  *		
- *  This file is part of FIASCO («F»ractal «I»mage «A»nd «S»equence «CO»dec)
- *  Copyright (C) 1994-2000 Ullrich Hafner <hafner@bigfoot.de>
+ *  This file is part of FIASCO (Fractal Image And Sequence COdec)
+ *  Copyright (C) 1994-2000 Ullrich Hafner
  */
 
 /*
@@ -72,10 +72,6 @@ memmove(void *dest, const void *src, size_t n);
 
 double
 Log2 (double x);
-#ifndef HAVE_STRDUP
-char *
-strdup (const char *s);
-#endif
 #ifndef HAVE_STRCASECMP
 bool_t
 strcaseeq (const char *s1, const char *s2);

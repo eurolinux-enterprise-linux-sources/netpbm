@@ -5,12 +5,14 @@
   These are external functions, unlike 'fileio.c', but are not
   particular to any Netpbm format.
 **************************************************************************/
+#define _DEFAULT_SOURCE /* New name for SVID & BSD source defines */
 #define _SVID_SOURCE
     /* Make sure P_tmpdir is defined in GNU libc 2.0.7 (_XOPEN_SOURCE 500
        does it in other libc's).  pm_config.h defines TMPDIR as P_tmpdir
        in some environments.
     */
-#define _XOPEN_SOURCE 600    /* Make sure ftello, fseeko are defined */
+#define _BSD_SOURCE    /* Make sure strdup is defined */
+#define _XOPEN_SOURCE 500    /* Make sure ftello, fseeko, strdup are defined */
 #define _LARGEFILE_SOURCE 1  /* Make sure ftello, fseeko are defined */
 #define _LARGEFILE64_SOURCE 1 
 #define _FILE_OFFSET_BITS 64
@@ -28,6 +30,7 @@
 #define _LARGE_FILE_API
     /* This makes the the x64() functions available on AIX */
 
+#include "netpbm/pm_config.h"
 #include <unistd.h>
 #include <assert.h>
 #include <stdio.h>
@@ -35,13 +38,13 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
-#ifdef __DJGPP__
-  #include <io.h>
+#if HAVE_IO_H
+  #include <io.h>  /* For mktemp */
 #endif
 
-#include "pm_c_util.h"
-#include "mallocvar.h"
-#include "nstring.h"
+#include "netpbm/pm_c_util.h"
+#include "netpbm/mallocvar.h"
+#include "netpbm/nstring.h"
 
 #include "pm.h"
 
@@ -248,12 +251,9 @@ pm_make_tmpfile_fd(int *         const fdP,
                    const char ** const filenameP) {
 
     const char * filenameTemplate;
-    unsigned int fnamelen;
     const char * tmpdir;
     const char * dirseparator;
     const char * error;
-
-    fnamelen = strlen(pm_progname) + 10; /* "/" + "_XXXXXX\0" */
 
     tmpdir = tmpDir();
 
@@ -305,17 +305,130 @@ pm_make_tmpfile(FILE **       const filePP,
 
 
 
+bool const canUnlinkOpen = 
+#if CAN_UNLINK_OPEN
+    1
+#else
+    0
+#endif
+    ;
+
+
+
+typedef struct UnlinkListEntry {
+/*----------------------------------------------------------------------------
+   This is an entry in the linked list of files to close and unlink as the
+   program exits.
+-----------------------------------------------------------------------------*/
+    struct UnlinkListEntry * next;
+    int                      fd;
+    char                     fileName[1];  /* Actually variable length */
+} UnlinkListEntry;
+
+static UnlinkListEntry * unlinkListP;
+
+
+
+static void
+unlinkTempFiles(void) {
+/*----------------------------------------------------------------------------
+  Close and unlink (so presumably delete) the files in the list
+  *unlinkListP.
+
+  This is an atexit function.
+-----------------------------------------------------------------------------*/
+    while (unlinkListP) {
+        UnlinkListEntry * const firstEntryP = unlinkListP;
+
+        unlinkListP = unlinkListP->next;
+
+        close(firstEntryP->fd);
+        unlink(firstEntryP->fileName);
+
+        free(firstEntryP);
+    }
+}
+
+
+
+static UnlinkListEntry *
+newUnlinkListEntry(const char * const fileName,
+                   int          const fd) {
+
+    UnlinkListEntry * const unlinkListEntryP =
+        malloc(sizeof(*unlinkListEntryP) + strlen(fileName) + 1);
+
+    if (unlinkListEntryP) {
+        strcpy(unlinkListEntryP->fileName, fileName);
+        unlinkListEntryP->fd   = fd;
+        unlinkListEntryP->next = NULL;
+    }
+    return unlinkListEntryP;
+}
+
+
+
+static void
+addUnlinkListEntry(const char * const fileName,
+                   int          const fd) {
+
+    UnlinkListEntry * const unlinkListEntryP =
+        newUnlinkListEntry(fileName, fd);
+
+    if (unlinkListEntryP) {
+        unlinkListEntryP->next = unlinkListP;
+        unlinkListP = unlinkListEntryP;
+    }
+}
+
+
+
+static void
+scheduleUnlinkAtExit(const char * const fileName,
+                     int          const fd) {
+/*----------------------------------------------------------------------------
+   Set things up to have the file unlinked as the program exits.
+
+   This is messy and probably doesn't work in all situations; it is a hack
+   to get Unix code essentially working on Windows, without messing up the
+   code too badly for Unix.
+-----------------------------------------------------------------------------*/
+    static bool unlinkListEstablished = false;
+    
+    if (!unlinkListEstablished) {
+        atexit(unlinkTempFiles);
+        unlinkListP = NULL;
+        unlinkListEstablished = true;
+    }
+
+    addUnlinkListEntry(fileName, fd);
+}
+
+
+
+static void
+arrangeUnlink(const char * const fileName,
+              int          const fd) {
+
+    if (canUnlinkOpen)
+        unlink(fileName);
+    else
+        scheduleUnlinkAtExit(fileName, fd);
+}
+
+
+
 FILE * 
 pm_tmpfile(void) {
 
     FILE * fileP;
-    const char * tmpfile;
+    const char * tmpfileNm;
 
-    pm_make_tmpfile(&fileP, &tmpfile);
+    pm_make_tmpfile(&fileP, &tmpfileNm);
 
-    unlink(tmpfile);
+    arrangeUnlink(tmpfileNm, fileno(fileP));
 
-    pm_strfree(tmpfile);
+    pm_strfree(tmpfileNm);
 
     return fileP;
 }
@@ -326,13 +439,13 @@ int
 pm_tmpfile_fd(void) {
 
     int fd;
-    const char * tmpfile;
+    const char * tmpfileNm;
 
-    pm_make_tmpfile_fd(&fd, &tmpfile);
+    pm_make_tmpfile_fd(&fd, &tmpfileNm);
 
-    unlink(tmpfile);
+    arrangeUnlink(tmpfileNm, fd);
 
-    pm_strfree(tmpfile);
+    pm_strfree(tmpfileNm);
 
     return fd;
 }
@@ -661,11 +774,18 @@ pm_readmagicnumber(FILE * const ifP) {
     int ich1, ich2;
 
     ich1 = getc(ifP);
+
+    if (ich1 == EOF)
+        pm_error("Error reading first byte of what is expected to be "
+                 "a Netpbm magic number.  "
+                 "Most often, this means your input file is empty");
+
     ich2 = getc(ifP);
-    if (ich1 == EOF || ich2 == EOF)
-        pm_error( "Error reading magic number from Netpbm image stream.  "
-                  "Most often, this "
-                  "means your input file is empty." );
+
+    if (ich2 == EOF)
+        pm_error("Error reading second byte of what is expected to be "
+                 "a Netpbm magic number (the first byte was successfully "
+                 "read as 0x%02x)", ich1);
 
     return ich1 * 256 + ich2;
 }
@@ -919,10 +1039,6 @@ pm_check(FILE *               const file,
     pm_filepos curpos;  /* Current position of file; -1 if none */
     int rc;
 
-#ifdef LARGEFILEDEBUG
-    pm_message("pm_filepos received by pm_check() is %u bytes.",
-               sizeof(pm_filepos));
-#endif
     /* Note: FTELLO() is either ftello() or ftell(), depending on the
        capabilities of the underlying C library.  It is defined in
        pm_config.h.  ftello(), in turn, may be either ftell() or

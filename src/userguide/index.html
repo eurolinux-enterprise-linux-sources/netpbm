@@ -3,7 +3,7 @@
 <HEAD><TITLE>User manual for Netpbm</TITLE></HEAD>
 <BODY>
 <H1>Netpbm</H1>
-Updated: 22 February 2009
+Updated: 31 January 2014
 <BR>
 <?makeman .SH NAME ?>
 <?makeman netpbm - netpbm library overview ?>
@@ -13,8 +13,8 @@ Updated: 22 February 2009
 
 <P><B>Netpbm</B> is a package of graphics programs and a programming
 library.  <P> There are over 220 separate programs in the package,
-most of which have &quot;pbm&quot;, &quot;pgm&quot;, &quot;ppm&quot;,
-&quot;pam&quot;, or &quot;pnm&quot; in their names.  For example,
+most of which have "pbm", "pgm", "ppm",
+"pam", or "pnm" in their names.  For example,
 <B><a href="pamscale.html">pamscale</a></B> and <B><a
 href="giftopnm.html">giftopnm</a></B>.
 
@@ -115,12 +115,18 @@ the other Netpbm files it uses as well.
 
 <DT><B>-plain</b>
 
-<DD>If the program generates an image in Netpbm format, generate it in
-the "plain" (aka "ascii") version of the format, as opposed to the
-"raw" (aka "binary") version.
+<DD>If the program generates an image in PNM format, generate it in the
+"plain" (aka "ascii") version of the format, as opposed to the "raw" (aka
+"binary") version.
+
+<P>Note that the other Netpbm format, PAM, does not have plain and raw
+versions, so this option has no effect on a program that generates PAM output.
 
 <p>
-This option was introduced in Netpbm 10.10 (October 2002).
+This option was introduced in Netpbm 10.10 (October 2002).  From Netpbm 10.32
+(February 2006) through Netpbm 10.62 (March 2013), the option is invalid with
+a program that generates PAM output (instead of ignoring the option, the
+program fails).
      
 </DL>
 
@@ -172,7 +178,7 @@ ls *.yuv
 <B>xargs</B> are also useful for simple manipulation of groups of files.
 
 <P>
-Some shells' &quot;process substitution&quot; facility can help where a
+Some shells' "process substitution" facility can help where a
 non-Netpbm program expects you to identify a disk file for input and
 you want it to use the result of a Netpbm manipulation.  Say
 the hypothetical program <b>printcmyk</b>
@@ -194,7 +200,7 @@ Netpbm tool.
 
 <P>
 All of the programs work with a set of graphics formats called the 
-&quot;netpbm&quot; formats.  Specifically, these formats are
+"netpbm" formats.  Specifically, these formats are
 <A HREF="pbm.html">pbm</A>,
 <A HREF="pgm.html">pgm</A>,
 <A HREF="ppm.html">ppm</A>,
@@ -202,7 +208,7 @@ and
 <A HREF="pam.html">pam</A>.
 
 The first three of these are sometimes known generically as
-&quot;pnm&quot;.
+"pnm".
 
 Many of the Netpbm programs convert from a Netpbm format to another
 format or vice versa.  This is so you can use the Netpbm programs to
@@ -221,9 +227,9 @@ it can represent matrices of general data including but not limited to
 black and white, grayscale, and color images.
 
 <P>
-Programs designed to work with PBM images have &quot;pbm&quot; in their names.
+Programs designed to work with PBM images have "pbm" in their names.
 Programs designed to work with PGM, PPM, and PAM images similarly have
-&quot;pgm&quot;, &quot;ppm&quot;, and &quot;pam&quot; in their names.
+"pgm", "ppm", and "pam" in their names.
 
 <P>
 All Netpbm programs designed to read PGM images see PBM images as if
@@ -231,8 +237,8 @@ they were PGM too.  All Netpbm programs designed to read PPM images
 see PGM and PBM images as if they were PPM.  See <a href="#impconv">
 Implied Format Conversion</a>.
 
-<P> Programs that have &quot;pnm&quot; in their names read PBM, PGM,
-and PPM but unlike &quot;ppm&quot; programs, they distinguish between
+<P> Programs that have "pnm" in their names read PBM, PGM,
+and PPM but unlike "ppm" programs, they distinguish between
 those formats and their function depends on the format.  For example, <B><a
 href="pnmtopng.html">pnmtopng</a></B> creates a black and white PNG
 output image if its input is PBM or PGM, but a color PNG output image
@@ -309,7 +315,7 @@ PBM program to read a PAM image, run it through <b>pamtopnm</b>.
 
 <P>In many graphics formats, there's a means of indicating that certain
 parts of the image are wholly or partially transparent, meaning that
-if it were displayed &quot;over&quot; another image, the other image
+if it were displayed "over" another image, the other image
 would show through there.  Netpbm formats deliberately omit that
 capability, since their purpose is to be extremely simple.
 
@@ -410,7 +416,7 @@ to totally describe the pixel.  Netpbm does this expansion to make
 implementing the programs easier -- it uses the same format regardless
 of the type of image.
 
-<p>Newer programs use the &quot;pam&quot; family of library functions
+<p>Newer programs use the "pam" family of library functions
 internally, which use memory a little differently.  These functions are
 designed to handle generic tuples with a variable numbers of planes, so no
 fixed size per-tuple storage is possible.  A program of this type uses 4 bytes
@@ -501,7 +507,7 @@ href="pamditherbw.html"><b>pamditherbw</b></a> (Make a black and white
 image that approximates a grayscale image).
 
 <p>The Netpbm image formats use 16 bit integers.  The Netpbm code uses
-&quot;unsigned int&quot; size integers to work with them.
+"unsigned int" size integers to work with them.
 
 
 <H2 id="netpbmforgimp">Netpbm For Gimp</H2>
@@ -550,6 +556,18 @@ expert might be able to figure it out and get some use out of it.
 
 <P>Netpbm contains primitive building blocks.  It certainly is not a
 complete graphics software library.
+
+<h3 id="othercmdline">Command Line Programs</h3>
+
+<P><B>ImageMagick</B> does many of the same things &mdash; mainly the more
+popular ones &mdash; that Netpbm does, including conversion between popular
+formats and basic editing.  <b>convert</b>, <b>mogrify</b>, <b>montage</b>, and
+<b>animate</b> are popular programs from the <B>ImageMagick</B>
+package.  <B>ImageMagick</B> runs on Unix, Windows, Windows NT, Macintosh, and
+VMS.
+
+<p><b>ImageMagick</b> also contains the program <b>display</b>, which is a
+<a href="#viewers">viewer</a> and <a href="#visual">visual editor</a>.
 
 <h3 id="viewers">Image Viewers</h3>
 
@@ -607,24 +625,21 @@ and generates a PPM image of it.  It works with Linux framebuffer devices.
 displays an image and lets you work on it and see the results as you go.
 This is fundamentally different from what Netpbm programs do.
 
-<P><B>ImageMagick</B> is like a visual version of Netpbm.  Using the
-X/Window system on Unix, you can do basic editing of images and lots
-of format conversions.  The package does include at least some
-non-visual tools.  <b>convert</b>, <b>mogrify</b>, <b>montage</b>, and
-<b>animate</b> are popular programs from the <B>ImageMagick</B>
-package.  <B>ImageMagick</B> runs on Unix, Windows, Windows NT,
-Macintosh, and VMS.
-
 <p><b>xv</b> is a very old and very popular simple image editor in the
 Unix world.  It does not have much in the way of current support,
 or maintenance, though.
 
-<P>The Gimp is a visual image editor for Unix and X, in the same category as
-the more famous, less capable, and much more expensive Adobe Photoshop,
-etc. for Windows.  See <B><A
-HREF="http://www.gimp.org">http://www.gimp.org</A></B>.  And you can add most
-of Netpbm's function to The Gimp using <a
-href="http://netpbm2gimp.sourceforge.net/">Netpbm2gimp</a>.
+<P>Gimp is a visual image editor for Unix and the X Window System, in the same
+category as the more famous, less capable, and much more expensive Adobe
+Photoshop, etc. for Windows.
+See <B><A HREF="http://www.gimp.org">http://www.gimp.org</A></B>.  And you can
+add most of Netpbm's function to Gimp
+using <a href="http://netpbm2gimp.sourceforge.net/">Netpbm2gimp</a>.
+
+<p><b>ImageMagick</b> contains the program <b>display</b>, which is another
+visual image editor.  It has fewer functions than Gimp.  This program uses the
+X Window System.  The package also contains <a href="othercmdline">command
+line</a> graphics programs.
 
 <p>Electric Eyes, <b>kuickshow</b>, and <b>gthumb</b> are also visual
 editors for the X/Window system, and <b>KView</b> and <b>gwenview</b>
@@ -634,7 +649,7 @@ are specifically for KDE.
 
 <P>If you're writing a program in C to draw and manipulate images, check out
 <a href="http://www.boutell.com/gd">gd</a>.  Netpbm contains a C library for
-drawing images (<b>libnetpbm</b>'s &quot;ppmd&quot; routines), but it is
+drawing images (<b>libnetpbm</b>'s "ppmd" routines), but it is
 probably not as capable or documented as <b>gd</b>.  You can easily run any
 Netpbm program from a C program with the <b>pm_system</b> function from the
 Netpbm programming library, but that is less efficient than <b>gd</b>
@@ -730,7 +745,7 @@ available).  This can convert from TIFF -&gt; IOCA and back again.
 <a href="http://www.thethinktanksoftware.com/details.html">Ameri-Imager</a>
 ($40 Windows only).
 
-<P><B>pnm2ppa</B> converts to HP's &quot;Winprinter&quot; format (for
+<P><B>pnm2ppa</B> converts to HP's "Winprinter" format (for
 HP 710, 720, 820, 1000, etc).  It is a superset of Netpbm's
 <B>pbmtoppa </B> and handles, notably, color.  However, it is more of
 a printer driver than a Netpbm-style primitive graphics building
@@ -769,11 +784,11 @@ purposes the quintessential Postscript and PDF tools.
 
 <P>Adobe's free Acrobat Reader displays PDF and converts to
 Postscript.  The Acrobat Reader for unix has a program name of
-&quot;acroread&quot; and the -toPostScript option (also see the
+"acroread" and the -toPostScript option (also see the
 -level2 option) is useful.
 
 <P>Other software from Adobe, available for purchase, interprets and
-creates Postscript and PDF files.  &quot;Distill&quot;
+creates Postscript and PDF files.  "Distill"
 is a program that converts Postscript to PDF.
 
 <p><a href="http://www.foolabs.com/xpdf/"><b>xpdf</b></a> also reads
@@ -818,14 +833,12 @@ Netpbm deals, so it is pretty handy for graphics work.  Netpbm's
 See 
 <B><A HREF="ftp://ftp.astron.com/pub/file">ftp://ftp.astron.com/pub/file</A></B>.
 
-<P>The Utah Raster Toolkit serves a lot of the same purpose as Netpbm,
-but without the emphasis on format conversions.  This package is based
-on the RLE format, which you can convert to and from the Netpbm
-formats.  The website of the <a
-href="http://www.cs.utah.edu/gdc">Geometric Design And Computation
-group</a> in the Department of Computer Science at University of Utah
-used to (ca. 2002) have information on the Utah Raster Toolkit, but
-now it doesn't.
+<P>The <a href="http://www.cs.utah.edu/gdc/projects/urt">Utah Raster
+Toolkit</a> from the <a href="http://www.cs.utah.edu/gdc">Geometric Design And
+Computation group</a> in the Department of Computer Science at University of
+Utah serves a lot of the same purpose as Netpbm, but without the emphasis on
+format conversions.  This package is based on the RLE format, which you can
+convert to and from the Netpbm formats.
 
 <P><B>Ivtools</B> is a suite of free X Window System drawing editors for
 Postscript, Tex, and web graphics production, as well as an embeddable
@@ -864,6 +877,18 @@ also handles lots of formats Netpbm does not.
 
 <li>WebP was announced by Google in October 2010 as a more compressed
 replacement for JFIF (aka JPEG) on the web.
+
+<li>JPEG-LS is similar to JFIF (aka JPEG) except that it is capable of
+representing all the information in any raster image, so you could convert
+from, say, PNM, without losing any
+information.  <a href="http://charls.codeplex.com">CharLS</a> is a programming
+library for JPEG-LS.
+
+
+<LI>Lossless JPEG is a similarly lossless variation of JPEG.  It predates
+every other lossless JPEG variation, but had only brief interest.  You can
+find code for encoding and decoding Lossless JPEG
+on <a href="https://github.com/thorfdbg/libjpeg">GitHub</a>.
 
 <li>JPEG XR offers greater dynamic range, a wider range of colors, and more
 efficient compression than JFIF (aka JPEG).  Windows and Internet Explorer
@@ -946,7 +971,7 @@ http://www.openexr.com</a>.
 <li>Xv Visual Schnauzer thumbnail image.  This is a rather antiquated
 format used by the Xv program.  In Netpbm circles, it is best known
 for the fact that it is very similar to Netpbm formats and uses the
-same signature (&quot;P7&quot;) as PAM because it was developed as
+same signature ("P7") as PAM because it was developed as
 sort of a fork of the Netpbm format specifications.
 
 <li>YUV 4:2:0, aka YUV 420, and the similar YUV 4:4:4, YUV 4:2:2,
@@ -959,7 +984,7 @@ format.
 the Netpbm formats for still images.  You use it for manipulating
 movies, but not for storing or transmitting them.  The only known use
 of the format is with <a
-href="mjpeg.sourceforge.net"><b>MJPEGTools</b></a>.  The programs
+href="http://mjpeg.sourceforge.net"><b>MJPEGTools</b></a>.  The programs
 <b>pnmtoy4m</b> and <b>y4mtopnm</b> (and predecessors <b>ppmtoy4m</b>
 and <b>y4mtoppm</b>) in that package convert between a Netpbm stream
 and a YUV4MPEG2 stream.  As you might guess from the name, YUV4MPEG2

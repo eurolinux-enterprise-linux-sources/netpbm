@@ -3,7 +3,7 @@
 <HEAD><TITLE>Pnmtopng User Manual</TITLE></HEAD>
 <BODY>
 <H1>pnmtopng</H1>
-Updated: July 2008
+Updated: 09 October 2016
 <BR>
 <A HREF="#index">Table Of Contents</A>
 
@@ -28,6 +28,7 @@ pnmtopng - convert a PNM image to PNG
 [<b>-rgb=&quot;</b><i>wx</i> <i>wy</i>
   <i>rx</i> <i>ry</i> <i>gx</i> <i>gy</i> <i>bx</i> <i>by</i><b>&quot;</b>]
 [<b>-size=&quot;</b><i>x</i> <i>y</i> <i>unit</i><b>&quot;</b>]
+[<b>-srgbintent=</b><i>intent</i>]
 [<b>-modtime=&quot;</b>[<i>yy</i>]<i>yy</i><b>-</b><i>mm</i><b>-</b><i>dd</i>
   <i>hh</i><b>:</b><i>mm</i><b>:</b><i>ss</i><b>&quot;</b>]
 [<b>-nofilter</b>]
@@ -106,10 +107,10 @@ sign to separate an option name from its value.  And the options had
 to come before the non-option program arguments.
 
 <p>Furthermore, the options <b>-chroma</b>, <b>-phys</b>, and
-<b>-time</b> were replaced by <b>-rgb</b>, <b>size</b>, and
+<b>-time</b> were replaced by <b>-rgb</b>, <b>-size</b>, and
 <b>-modtime</b>, respectively.  The only difference, taking
 <b>-phys</b>/<b>-size</b> as an example, is that <b>-phys</b> takes
-multiple program arguments as the option argument, whereas <b>-rgb</b>
+multiple program arguments as the option argument, whereas <b>-size</b>
 takes a single program argument which is composed of multiple words.
 E.g.  The old shell command
 
@@ -123,13 +124,13 @@ E.g.  The old shell command
 
 <pre>
 <kbd>
-   pnmtopng -size &quot;800 800 0&quot; input.pnm >output.png
+   pnmtopng -size "800 800 0" input.pnm >output.png
 </kbd>
 </pre>
 
 <p>If you're writing a program that needs to work with both new and old
 <b>pnmtopng</b>, have it first try with the new syntax, and if it fails
-with &quot;unrecognized option,&quot; fall back to the old syntax.
+with "unrecognized option," fall back to the old syntax.
 
 <DL COMPACT>
 <DT><B>-verbose</B>
@@ -144,12 +145,12 @@ with &quot;unrecognized option,&quot; fall back to the old syntax.
      Creates an interlaced PNG file (Adam7).
 <DT><B>-alpha=</b><i>filename</i>
 
-<DD> This specifies the transparency (alpha channel) of the image.
-You supply the alpha channel as a standard PGM alpha mask (see the <a
-href="pgm.html">PGM</a> specification.  <b>pnmtopng</b> does not
-necessarily represents the transparency information as an alpha channel in
-the PNG format.  If it can represent the transparency information through
-a palette, it will do so in order to make a smaller PNG file.
+<DD> This specifies the transparency (alpha) channel of the image.  You supply
+the transparency channel as a standard PGM transparency mask (see
+the <a href="pgm.html">PGM</a> specification.  <b>pnmtopng</b> does not
+necessarily represents the transparency information as a transparency channel
+in the PNG format.  If it can represent the transparency information through a
+palette, it will do so in order to make a smaller PNG file.
 <b>pnmtopng</b> even sorts the palette so it can omit the opaque colors
 from the transparency part of the palette and save space for the palette.
 
@@ -168,7 +169,7 @@ distance between colors in RGB space.  If multiple colors are
 equidistant, <B>pnmtopng</B> chooses one of them arbitrarily.
 
 <P>However, if you prefix your color specification with
-&quot;=&quot;, e.g.
+"=", e.g.
 
 <pre>
 <kbd>
@@ -183,7 +184,7 @@ color does not appear in the image, there will be no transparency.
 <DT><B>-background=</b><i>color</i>
 <DD>
 Causes <b>pnmtopng</b> to create a background color chunk in the PNG output
-which can be used for subsequent alpha channel or transparent color
+which can be used for subsequent transparency channel or transparent color
 conversions.  Specify <i>color</i> the same as for <b>-transparent</b>.
 
 <DT><B>-palette=</b><i>palettefile</i>
@@ -216,7 +217,7 @@ think it would, using <b>-palette</b> in this case wouldn't even save
 describe how the color values in the PNG must be interpreted.  Without
 the gAMA chunk, whatever interprets the PNG must get this information
 separately (or just assume something standard).  If your input is a true
-PPM or PGM image, you should specify <b>-gamma=.45</b>.  But sometimes 
+PPM or PGM image, you should specify <b>-gamma=.52</b>.  But sometimes 
 people generate images which are ostensibly PPM except the image uses a 
 different gamma transfer function than the one specified for PPM.  A common
 case of this is when the image is created by simple hardware that doesn't
@@ -228,6 +229,54 @@ images from scratch do it with a gamma transfer in which the gamma value is
 
 <DD>Use this parameter to create a chunk that specifies the frequency
 (or histogram) of the colors in the image.
+
+<DT><B>-text=</b><i>filename</i>
+
+<DD>
+This option lets you include arbitrary text strings in the PNG output, as tEXt
+chunks.
+
+<i>filename</i> is the name of a file that contains your text strings.
+
+<p>The output contains a distinct tEXt chunk for each entry in the file.
+
+<p>Here is an example of a text string file:
+
+<pre>
+	Title           PNG file
+	Author          John Doe
+	Description     how to include a text chunk
+                        PNG file
+	"Creation Date" 2015-may-11
+	Software        pamtopng
+</pre>
+
+<p>The file is divided into entries, each entry comprising consecutive lines
+of text.  The first line of an entry starts in the first column (i.e. the
+first column is not white space) and every other line has white space in the
+first column.  The first entry starts in the first line, so it is not valid
+for the first line of the file to have white space in its first column.
+
+<p>The first word in an entry is the key of the text string
+(e.g. &quot;Title&quot;).  It begins in column one of the line and continues
+up to, but not including, the first delimiter character or the end of the
+line, whichever is first.  You can enclose the key in double quotes in
+which case the key can consists of multiple words.  The quotes are not
+part of the key.  The text string per se begins after the key and any
+delimiter characters after it, plus the text in subsequent continuation lines.
+
+<p>There is no limit on the length of a file line or entry or key or text
+string.  There is no limit on the number of entries.
+
+<DT><B>-ztxt=</b><i>filename</i>
+
+<DD>The same as <b>-text</b>, except the text string is compressed in the PNG
+output.  <b>pnmtopng</b> uses zTXt chunks instead of a tEXt chunks, unless the
+key for the text string starts with &quot;A&quot; or &quot;T&quot;.  This
+odd exception exists for backward compatibility; we don't know why the program
+was originally designed this way, except that the distinction was meant to
+roughly identify the keys &quot;Author&quot; and &quot;Title&quot;.
+
 
 <DT><B>-rgb=</b><i>chroma_list</i>
 
@@ -250,14 +299,14 @@ arguments.
 the option <b>-chroma</b> does the same thing, but with slightly
 different syntax.
 
-<DT><B>-size=&quot;</b><i>x</i> <i>y</i> <i>unit</i><b>&quot;</b>
+<DT><B>-size="</b><i>x</i> <i>y</i> <i>unit</i><b>"</b>
 
 <DD>This option determines the aspect ratio of the individual pixels
 of your image as well as the physical resolution of it.
 
 <p><i>unit</i> is either <b>0</b> or <i>1</i>.  When it is <i>1</i>,
 the option specifies the physical resolution of the image in pixels
-per meter.  For example, <b>-size=&quot;10000 15000 1&quot;</b> means
+per meter.  For example, <b>-size="10000 15000 1"</b> means
 that when someone displays the image, he should make it so that 10,000
 pixels horizontally occupy 1 meter and 15,000 pixels vertically occupy
 one meter.  And even if he doesn't take this advice on the overall
@@ -277,64 +326,26 @@ with no pHYS chunk, which means square pixels of no absolute resolution.
 the option <b>-phys</b> does the same thing, but with slightly
 different syntax.
 
-<DT><B>-text=</b><i>filename</i>
+<dt><b>-srgbintent=</b><i>intent</i>
+<dd>This asserts that the input is a pseudo-Netpbm image that uses an
+sRGB color space (unlike true Netpbm) and indicates how you intend for the
+colors to be rendered.  It causes <b>pnmtopng</b> to include an sRGB chunk
+in the PNG image that specifies that intent, so see the PNG documentation for
+more information on what this really means.
 
-<DD>
-This option lets you include comments in the text chunk of the PNG output.
-<i>file</i> is the name of a file that contains your text comments.
+<p><i>intent</i> is one of:
 
-<p>Here is an example of a comment file:
-<pre>
-           Title           PNG file
-           
-           Author          Bryan Henderson
-           
-           Description     how to include a text chunk
-                           PNG file
-           "Creation date" 3-feb-1987
-           
-           Software        pnmtopng
-</pre>
+<ul>
+<li><b>perceptual</b>  
+<li><b>relativecolorimetric</b>  
+<li><b>saturation</b>  
+<li><b>absolutecolorimetric</b>  
+</ul>
 
-<p>The format of the file is as follows:  The file is divided into lines,
-delimited by newline characters.  The last line need not end with a newline
-character.  A group of consecutive lines represents a comment.  
+<p>This option was new in Netpbm 10.71 (June 2015).  Before that,
+<b>pnmtopng</b> never generates an sRGB chunk.
 
-<p>A "delimiter character" is a blank or tab or null character.  The
-first line representing a comment must not start with a delimiter
-character.  Every other line in the group is a "continuation line" and
-must start with a delimiter character.
-
-<p>The first line representing a comment consists of a keyword and the
-first line of comment text.  The keyword begins in Column 1 of the
-file line and continues up to, but not including, the first delimiter
-character, or the end of the line, whichever is first.  Exception: you
-can enclose the keyword in double quotes and spaces and tabs within
-the double quotes are part of the keyword.  The quotes are not part of
-the keyword.  A NUL character is not allowed in a keyword.
-
-<p>The first line of the comment text is all the text in the file line
-beginning after the keyword and any delimiter characters after it.
-immediately after the delimiter character that marks the end of the
-keyword.
-
-<p>A continuation line defines a subsequent line of the comment.  The
-comment line is all the text on the continuation line starting with the
-first non-delimiter character.
-
-<p>There is one newline character between every two comment lines.  There
-is no newline character after the last line of comment text.
-
-<p>There is no limit on the length of a file line or keyword or comment text
-line or comment text.  There is no limit on the number of comments or
-size of or number of lines in the file.
-
-<DT><B>-ztxt=</b><i>filename</i>
-
-<DD>The same as <b>-text</b>, except <b>pnmtopng</b> considers the
-text compressed.
-
-<DT><B>-modtime=&quot;</b>[<i>yy</i>]<i>yy-mm-dd hh:mm:ss</i><b>&quot;</b> 
+<DT><B>-modtime="</b>[<i>yy</i>]<i>yy-mm-dd hh:mm:ss</i><b>"</b> 
 
 <DD>This option allows you to specify the modification time value to
 be placed in the PNG output.  You can specify the year parameter
@@ -376,11 +387,15 @@ same.
 compression.  Select a level from 0 for no compression (maximum speed)
 to 9 for maximum compression (minimum speed).
 
+<p>The default is the default of the zlib library.
+
 <dt><b>-comp_mem_level=</b><i>n</i>
 
 <dd>This option sets the memory usage level of the zlib compression.
 Select a level from 1 for minimum memory usage (and minimum speed) to
 9 for maximum memory usage (and speed).
+
+<p>The default is the default of the zlib library.
 
 <p>This option was new in Netpbm 10.30 (October 2005).
 
@@ -388,6 +403,8 @@ Select a level from 1 for minimum memory usage (and minimum speed) to
 
 <dd>This options sets the compression strategy of the zlib compression.
 See Zlib documentation for information on what these strategies are.
+
+<p>The default is the default of the zlib library.
 
 <p>This option was new in Netpbm 10.30 (October 2005).
 
@@ -397,6 +414,8 @@ See Zlib documentation for information on what these strategies are.
 completeness and for possible forward compatibility.  It theoretically
 selects the compression method of the zlib compression, but the Z
 library knows only one method today, so there's nothing to choose.
+
+<p>The default is the default of the zlib library.
 
 <p>This option was new in Netpbm 10.30 (October 2005).
 
@@ -408,6 +427,8 @@ so 8 means 256 bytes.  The value must be from 8 to 15 (i.e. 256 bytes
 to 32K).
 
 <p>See Zlib documentation for details on what this window size is.
+
+<p>The default is the default of the zlib library.
 
 <p>This option was new in Netpbm 10.30 (October 2005).
 
@@ -430,11 +451,11 @@ compression buffer) in bytes.
 <DT><B>-force</B>
 
 <DD>
-When you specify this, <b>pnmtopng</b> limits its optimizations.
-The resulting PNG output is as similar to the Netpbm input as possible.
-For example, the PNG output will not be paletted and the alpha channel
-will be represented as a full alpha channel even if the information could
-be represented more succinctly with a transparency chunk.
+When you specify this, <b>pnmtopng</b> limits its optimizations.  The
+resulting PNG output is as similar to the Netpbm input as possible.  For
+example, the PNG output will not be paletted and the transparency channel will
+be represented as a full transparency channel even if the information could be
+represented more succinctly with a transparency chunk.
 
 
 <DT><B>-libversion</B>
@@ -449,14 +470,14 @@ information about the Netpbm library and do nothing else.
 <p>You can't really use this option in a program that invokes
 <b>pnmtopng</b> and needs to know which version it is.  Its function
 has changed too much over the history of <b>pnmtopng</b>.  The option
-is only good for human eyes.
+is good only for human eyes.
 
 </DL>
 
 <H2 id="seealso">SEE ALSO</H2>
 
 <A HREF="pngtopam.html">pngtopam</A>, 
-<A HREF="pamrgbatopng.html">pamrgbatopng</A>,
+<A HREF="pamtopng.html">pamtopng</A>,
 <A HREF="pnmremap.html">pnmremap</A>,
 <A HREF="pnmgamma.html">pnmgamma</A>, 
 <A HREF="pnm.html">pnm</A>

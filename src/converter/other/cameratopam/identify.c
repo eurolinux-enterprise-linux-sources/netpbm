@@ -1,7 +1,10 @@
+#define _DEFAULT_SOURCE /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE   /* Make sure strcasecmp() is in string.h */
 #include <string.h>
 
 #include "pm.h"
+#include "pm_c_util.h"
+#include "nstring.h"
 
 #include "global_variables.h"
 #include "util.h"
@@ -21,7 +24,6 @@ static bool const have64BitArithmetic = false;
 #endif
 
 
-static loadRawFn load_raw;
 
 /* This does the same as the function of the same name in the GNU C library */
 static const char *memmem_internal (const char *haystack, size_t haystacklen,
@@ -34,16 +36,20 @@ static const char *memmem_internal (const char *haystack, size_t haystacklen,
     return NULL;
 }
 
-/*
-  Thanks to Adobe for providing these excellent CAM -> XYZ matrices!
-*/
+
+
 static void 
-adobe_coeff()
-{
-    static const struct {
-        const char *prefix;
+adobeCoeff(const char * const make,
+           const char * const model) {
+    /*
+      Thanks to Adobe for providing these excellent CAM -> XYZ matrices!
+    */
+    struct CoeffTableEntry {
+        const char * prefix;
         short trans[12];
-    } table[] = {
+    }; 
+
+    static struct CoeffTableEntry const table[] = {
         { "Canon EOS D2000C",
           { 24542,-10860,-3401,-1490,11370,-297,2858,-605,3225 } },
         { "Canon EOS D30",
@@ -229,33 +235,33 @@ adobe_coeff()
     double cm[4][3];
     double xyz[] = { 1,1,1 };
     char name[130];
-    int i, j;
+    unsigned int i;
 
-    for (i=0; i < 4; i++)
-        for (j=0; j < 4; j++)
-            cc[i][j] = i == j;
+    /* Make an identity matrix (1's on the diagonal) */
+    for (i = 0; i < 4; ++i) {
+        unsigned int j;
+        for (j = 0; j < 4; ++j)
+            cc[i][j] = (i == j);
+    }
     sprintf (name, "%s %s", make, model);
-    for (i=0; i < sizeof table / sizeof *table; i++)
-        if (!strncmp (name, table[i].prefix, strlen(table[i].prefix))) {
+
+    for (i = 0; i < ARRAY_SIZE(table); ++i) {
+        const struct CoeffTableEntry * const entryP = &table[i];
+
+        if (strneq(name, entryP->prefix, strlen(entryP->prefix))) {
             unsigned int j;
-            /* I have no idea what this code is supposed to do, but the way I
-               found it, it was setting the first 12 elements, instead of 4,
-               of cm[0].  But cm[0] has only 3 elements!  So I just changed it
-               to use the first 3 "trans" values and ignore the rest.  I
-               don't know if that produces useful results, but at least it
-               cures the array bounds violation.  -Bryan 2010.04.09.
-            */
-            for (j=0; j < 3; j++)
-                cm[0][j] = table[i].trans[j];
-            dng_coeff (cc, cm, xyz);
+            for (j = 0; j < 12; ++j)
+                cm[j/3][j%3] = entryP->trans[j];
+            dng_coeff(cc, cm, xyz);
+
             break;
         }
+    }
 }
 
-/*
-  Identify which camera created this file, and set global variables
-  accordingly.  Return nonzero if the file cannot be decoded.
-*/
+
+
+
 int
 identify(FILE *       const ifp,
          bool         const use_secondary,
@@ -264,8 +270,11 @@ identify(FILE *       const ifp,
          float        const blue_scale,
          unsigned int const four_color_rgb,
          const char * const inputFileName,
-         loadRawFn *  const loadRawFnP)
-{
+         LoadRawFn ** const loadRawFnP) {
+/*----------------------------------------------------------------------------
+  Identify which camera created this file, and set global variables
+  accordingly.  Return nonzero if the file cannot be decoded.
+-----------------------------------------------------------------------------*/
     char head[32];
     char * c;
     unsigned hlen, fsize, i;
@@ -299,6 +308,7 @@ identify(FILE *       const ifp,
         { "Canon", "NIKON", "EPSON", "Kodak", "OLYMPUS", "PENTAX",
           "MINOLTA", "Minolta", "Konica", "CASIO" };
     float tmp;
+    LoadRawFn * load_raw;
 
     /*  What format is this file?  Set make[] if we recognize it. */
 
@@ -317,9 +327,6 @@ identify(FILE *       const ifp,
     colors = 3;
     for (i=0; i < 0x1000; i++) curve[i] = i;
     maximum = 0xfff;
-#ifdef USE_LCMS
-    profile_length = 0;
-#endif
 
     order = get2(ifp);
     hlen = get4(ifp);
@@ -419,6 +426,9 @@ identify(FILE *       const ifp,
         memmove (model, model+i, 64-i);
     make[63] = model[63] = model2[63] = 0;
 
+    if (verbose)
+        fprintf(stderr, "Make = '%s', Model = '%s'\n", make, model);
+
     if (make[0] == 0) {
         pm_message ("unrecognized file format.");
         return 1;
@@ -449,7 +459,7 @@ identify(FILE *       const ifp,
         goto dng_skip;
     }
 
-/*  We'll try to decode anything from Canon or Nikon. */
+    /*  We'll try to decode anything from Canon or Nikon. */
 
     if (!filters) filters = 0x94949494;
     if ((is_canon = !strcmp(make,"Canon")))
@@ -459,7 +469,7 @@ identify(FILE *       const ifp,
         load_raw = nikon_is_compressed() ?
             nikon_compressed_load_raw : nikon_load_raw;
 
-/* Set parameters based on camera name (for non-DNG files). */
+    /* Set parameters based on camera name (for non-DNG files). */
 
     if (is_foveon) {
         if (!have64BitArithmetic)
@@ -1152,7 +1162,8 @@ identify(FILE *       const ifp,
             flip = 2;
         }
     }
-    if (!use_coeff) adobe_coeff();
+    if (!use_coeff)
+        adobeCoeff(make, model);
 dng_skip:
     if (!load_raw || !height) {
         pm_message ("This program cannot handle data from %s %s.",

@@ -6,6 +6,8 @@
    See COPYRIGHT file for copyright information.
 */
 
+#define _DEFAULT_SOURCE /* New name for SVID & BSD source defines */
+#define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
 #define _BSD_SOURCE    /* Make sure strcaseeq() is in nstring.h */
 
 #include <assert.h>
@@ -193,7 +195,7 @@ determineRepaintStrategy(viewer  *    const viewerP,
                         
     /* Decide how we're going to handle repaints.  We have three modes:
        use backing-store, use background pixmap, and use exposures.
-       If the server supports backing-store, we enable it and use it.
+       If the server allows backing-store, we enable it and use it.
        This really helps servers which are memory constrained.  If the
        server does not have backing-store, we try to send the image to
        a pixmap and use that as backing-store.  If that fails, we use
@@ -652,9 +654,9 @@ bestVisual(Display *      const disp,
     Visual * visualP;
     Visual * default_visualP;
 
-    /* Figure out the best depth the server supports.  note that some servers
-       (such as the HP 11.3 server) actually say they support some depths but
-       have no visuals that support that depth.  Seems silly to me ...
+    /* Figure out the best depth the server allows.  note that some servers
+       (such as the HP 11.3 server) actually say they allow some depths but
+       have no visuals that allow that depth.  Seems silly to me ...
     */
 
     depth = 0;

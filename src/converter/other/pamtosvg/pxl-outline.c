@@ -9,7 +9,6 @@
 
 #include "message.h"
 #include "bitmap.h"
-#include "bitmap.h"
 #include "logreport.h"
 #include "pxl-outline.h"
 
@@ -207,10 +206,8 @@ next_unmarked_pixel(unsigned int *   const row,
     direction_type const orig_dir = *dir;
 
     direction_type test_dir;
-    pixel color;
 
     test_dir = *dir;  /* initial value */
-    color = getBitmapColor(bitmap, *row, *col);
 
     do {
         if (is_valid_dir(orig_row, orig_col, test_dir, bitmap, *marked)) {
@@ -269,7 +266,7 @@ findOneCenterline(bitmap_type    const bitmap,
     */
     {
         pm_pixelcoord pos;
-        pos.col = col; pos.row = bitmap.height - row - 1;
+        pos.col = originalCol; pos.row = bitmap.height - originalRow - 1;
         LOG2(" (%d,%d)", pos.col, pos.row);
         append_outline_pixel(&outline, pos);
     }

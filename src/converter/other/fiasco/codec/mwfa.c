@@ -4,8 +4,8 @@
  *  Written by:		Michael Unger
  *			Ullrich Hafner
  *		
- *  This file is part of FIASCO («F»ractal «I»mage «A»nd «S»equence «CO»dec)
- *  Copyright (C) 1994-2000 Ullrich Hafner <hafner@bigfoot.de>
+ *  This file is part of FIASCO (Fractal Image And Sequence COdec)
+ *  Copyright (C) 1994-2000 Ullrich Hafner
  */
 
 /*
@@ -438,7 +438,7 @@ find_B_frame_mc (word_t *mcpe, real_t price, range_t *range,
    else					/* local exhaustive search */
    {
       /*
-       *  Keep forward and backward mv due to time constraints
+       *  Keep forward and backward mv because of time constraints
        */
 
       ifx = fx;

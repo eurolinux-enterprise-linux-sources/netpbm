@@ -1,6 +1,7 @@
 #! /bin/bash
 # This script tests: pbmtomrf mrftopbm
-# Also requires: 
+# Also requires:
+
 
 # Should print 2425386270 41, cksum of testgrid.pbm
-${PBM_TESTPREFIX}pbmtomrf testgrid.pbm | ${PBM_TESTPREFIX}mrftopbm | cksum
+pbmtomrf testgrid.pbm | mrftopbm | cksum

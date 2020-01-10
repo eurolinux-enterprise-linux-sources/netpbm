@@ -219,6 +219,9 @@ pm_errormsg(const char format[], ...);
 void PM_GNU_PRINTF_ATTR(1,2)
 pm_error (const char reason[], ...);       
 
+int
+pm_have_float_format(void);
+
 /* Obsolete - use shhopt and user's manual instead */
 void 
 pm_usage (const char usage[]);             

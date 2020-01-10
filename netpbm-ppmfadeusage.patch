@@ -1,15 +1,7 @@
-diff -up netpbm-10.47.09/editor/ppmfade.ppmfadeusage netpbm-10.47.09/editor/ppmfade
---- netpbm-10.47.09/editor/ppmfade.ppmfadeusage	2010-02-17 11:22:02.000000000 +0100
-+++ netpbm-10.47.09/editor/ppmfade	2010-02-17 11:27:29.000000000 +0100
-@@ -34,7 +34,6 @@ my $base_name = "fade";		# default base 
- my $image = "ppm";		# default output storage format
- my $mode = $SPREAD;		# default fading mode
- 
--
- my $n;  # argument number
- 
- for ($n = 0; $n < @ARGV; $n++) {
-@@ -44,7 +43,7 @@ for ($n = 0; $n < @ARGV; $n++) {
+diff -urNp old/editor/ppmfade new/editor/ppmfade
+--- old/editor/ppmfade	2017-11-01 11:47:49.869611402 +0100
++++ new/editor/ppmfade	2017-11-01 11:53:25.524973342 +0100
+@@ -84,7 +84,7 @@ for ($n = 0; $n < @ARGV; $n++) {
          if (-e $first_file) {
          } else {
              print "I can't find first file '$first_file'\n";
@@ -18,7 +10,7 @@ diff -up netpbm-10.47.09/editor/ppmfade.ppmfadeusage netpbm-10.47.09/editor/ppmf
          }
      } elsif ($ARGV[$n] eq "-l") {
          $n++;
-@@ -52,7 +51,7 @@ for ($n = 0; $n < @ARGV; $n++) {
+@@ -92,7 +92,7 @@ for ($n = 0; $n < @ARGV; $n++) {
          if (-e $last_file) {
          } else {
              print "I can't find last file '$last_file'\n";
@@ -27,12 +19,10 @@ diff -up netpbm-10.47.09/editor/ppmfade.ppmfadeusage netpbm-10.47.09/editor/ppmf
          }
      } elsif ($ARGV[$n] eq "-base") {
          $n++;
-@@ -73,11 +72,12 @@ for ($n = 0; $n < @ARGV; $n++) {
+@@ -113,9 +113,12 @@ for ($n = 0; $n < @ARGV; $n++) {
          $mode = $BLOCK;
      } elsif ("$ARGV[$n]" eq "-mix") {
          $mode = $MIX;
--    } elsif ($ARGV[$n] eq "-help" || $ARGV[$n] eq "-h") {
--        usage();
 +    } elsif ($ARGV[$n] eq "-help" || $ARGV[$n] eq "--help" || $ARGV[$n] eq "-h") {
 +        print "ppmfade: Use 'man ppmfade' for help.\n";
 +        exit 1;
@@ -43,7 +33,7 @@ diff -up netpbm-10.47.09/editor/ppmfade.ppmfadeusage netpbm-10.47.09/editor/ppmf
      } 
  }
  #
-@@ -96,18 +96,18 @@ if ($first_file ne "undefined") {
+@@ -134,18 +137,18 @@ if ($first_file ne "undefined") {
          $width = $1; $height = $2;
      } else {
          print("Unrecognized results from pnmfile on $first_file.\n");

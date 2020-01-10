@@ -40,14 +40,11 @@ file.  Otherwise, it creates a PPM file.  Except that with the
 tuple type GRAYSCALE_ALPHA or RGB_ALPHA depending on whether the input
 has color or not.
 
-<p>To convert in the other direction, use <b>pnmtopng</b> or
-<b>pamrgbatopng</b>.  The former is more powerful in almost every way, except
-that only the latter can recognize transparency information in a PAM file, as
-you might generate with <b>pngtopam -alphapam</b>.  To use <b>pnmtopng</b>
-with a PAM file with transparency, you can separate out the transparency
-channel with <b>pamchannel</b> and feed it to <b>pnmtopng</b> separately.  But
-you may want to use <b>pngtopam -alpha</b> instead of <b>pngtopam
--alphapam</b> if you're going to be converting back.
+<p>To convert in the other direction, use <b>pamtopng</b> or
+<b>pnmtopng</b>.  The former is the more modern of the two and can recognize
+transparency information in a PAM file, as you might generate with <b>pngtopam
+-alphapam</b>.  It has existed only since June 2015.  The latter has more
+features, but probably not ones that matter in the modern world.
 
 
 <H2 id="options">OPTIONS</H2>
@@ -64,7 +61,7 @@ conversion process.
 <DT><B>-alphapam</B>
 
 <DD>Produce a single output image containing the main image (foreground)
-and the alpha channel or transparency mask.  This image is in the PAM
+and the transparency channel or transparency mask.  This image is in the PAM
 format with tuple type of either GRAYSCALE_ALPHA (which has a depth of
 2 channels) or RGB_ALPHA (which has a depth of 4 channels).
 
@@ -72,15 +69,11 @@ format with tuple type of either GRAYSCALE_ALPHA (which has a depth of
 <b>-mix</b>.  With none of them, <b>pngtopam</b> produces an image of
 the foreground of the input image and discards transparency information.
 
-<p>Note that converting in the other direction, the <b>pamtopng</b> converter
-won't recognize the transparency information you generate
-with <b>-alphapam</b>, but <b>pamrgbatopng</b> will.
-
 <P>This option was new in Netpbm 10.44 (September 2008).
 
 <DT><B>-alpha</B>
 
-<DD>Output the alpha channel or transparency mask of the image. The
+<DD>Output the transparency channel or transparency mask of the image. The
 result is either a PBM file or a PGM file, depending on whether
 different levels of transparency appear.
 
@@ -92,7 +85,7 @@ the foreground of the input image and discards transparency information.
 
 <DT><B>-mix</B>
 
-<DD>Compose the image with the transparency or alpha mask against a
+<DD>Compose the image with the transparency or transparency mask against a
 background.  The background color is determined by the bKGD chunk in
 the PNG, except that you can override it with <b>-background</b>.
 If the PNG has no bKGD chunk and you don't specify <b>-background</b>,
@@ -131,17 +124,38 @@ caused a usability problem).
 
 <DT><B>-gamma=</b><i>value</i>
 
-<DD>Converts the image to a new display-gamma value.  If a gAMA chunk
-is present in the <I>png-file</I>, <b>pngtopam</b> uses the specified
-image-gamma value.  If not, <b>pngtopam</b> considers the image-gamma
-to be 1.0.  Based on the image-gamma and the display-gamma given with
-this option, <b>pngtopam</b> adjusts the colors written to the
-<I>pnm-file</I>.
+<dd>This option causes <b>pngtopam</b> to respect the image gamma information
+in the PNG file (from the gAMA chunk).  Probably by historical accident,
+<b>pngtopam</b> ignores that information by default, assuming the image uses
+the same gamma transformation as a Netpbm image, so the output image has
+different colors than the PNG file actually represents if the PNG doesn't
+actually do that.  (However, it is rare for a PNG file to use a gamma
+transformation different from what the Netpbm formats specify, or if it does,
+to specify with a gAMA chuck what that is).
+
+<p>But when you <em>do</em> specify <b>-gamma</b>, you get a rather strange
+additional function, probably a historical mistake:
+<b>pngtopam</b> incorporates the specified screen gamma value into the output
+pixels, so that the samples in the Netpbm output deviate from the Netpbm
+format specifications and are appropriate raw intensity values to send to the
+display.  This function essentially just exercises the ability of the PNG
+library to make gamma corrections to the pixels as it reads them from the PNG
+file to produce values appropriate for sending to a certain display in certain
+viewing conditions.  It's a strange function because it has nothing to do with
+PNG and because in Netpbm, the normal way to make gamma corrections
+appropriate for sending to a ceratin display in certain viewing conditions is
+with the program <b>pngtopam</b>, applied to the normal output of
+<b>pngtopam</b>.
+
+<p>If you specify <b>-gamma</b>, but the PNG image does not specify what gamma
+transformation it uses (there is no gAMA chunk), <b>pngtopam</b> assumes a
+simple power transformation with an image gamma of 1.0.  That is probably not
+not the actual image gamma; it is much more likely to be .45.
 
 <p>Because the gammas of uncompensated monitors are around 2.6, which results 
 in an image-gamma of 0.45, some typical situations are: 
 when the image-gamma is 0.45 (use -verbose to check) and the picture is too 
-light, your system is gamma-corrected, so convert with &quot;-gamma 1.0&quot;. 
+light, your system is gamma-corrected, so convert with "-gamma 1.0". 
 When no gAMA chunk is present or the image-gamma is 1.0, use 2.2 to make the 
 picture lighter and 0.45 to make the picture darker.
 
@@ -152,12 +166,9 @@ transparent.  But <b>pngtopam</b> interprets this as applying to the
 gamma-corrected space, and there may be less precision in that space
 than in the original, which means multiple uncorrected colors map to
 the same corrected color.  So imagine that the image contains 3 shades
-of white and specifies that one of them is transparent.  After gamma
+of white (gray) and specifies that one of them is transparent.  After gamma
 correction, those three shades are indistinguishable, so
 <b>pngtopam</b> considers pixels of all three shades to be transparent.
-
-<p>If this is not what you want, don't use <b>gamma</b>.  Instead,
-use <b>pnmgamma</b> on the output.
 
 
 <DT><B>-text=</b><i>file</i>
@@ -208,7 +219,7 @@ incorrectly, or vice versa.
 <B>pngtopam</B> uses Whole Image.  You can select Row By Row with
 <b>-byrow</b> if you want the speed or resource requirement improvement.
 
-<p><b>-byrow</b> was new in Netpbm 10.54 (March 2010).
+<p><b>-byrow</b> was new in Netpbm 10.54 (March 2011).
 
 
 <dt><b>-orientraw</b>
@@ -230,8 +241,9 @@ Netpbm format.
 
 <H2 id="seealso">SEE ALSO</H2>
 
+<A HREF="pnmtopng.html">pamtopng</A>,
 <A HREF="pnmtopng.html">pnmtopng</A>,
-<A HREF="pngtopnm.html">pnmtopng</A>,
+<A HREF="pngtopnm.html">pngtopnm</A>,
 <b>ptot</b>,
 <A HREF="pnmgamma.html">pnmgamma</A>, 
 <A HREF="pnm.html">pnm</A>
@@ -269,7 +281,7 @@ change to the package in Netpbm's renaissance.  It and <b>pnmtopng</b>
 were simply copied from the <a
 href="http://www.libpng.org/pub/png/apps/pnmtopng.html">
 <b>pnmtopng</b> package</a> by Greg Roelofs.  Those were based on
-simpler reference applications by by Alexander Lehmann
+simpler reference applications by Alexander Lehmann
 &lt;alex@hal.rhein-main.de&gt; and Willem van Schaik
 &lt;willem@schaik.com&gt; and distributed with their PNG library.
 

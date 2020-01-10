@@ -8,10 +8,18 @@
 
 *****************************************************************************/
 
+#define _DEFAULT_SOURCE 1  /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE 1      /* Make sure strdup() is in string.h */
-/* Make sure strdup() is in string.h and int_fast32_t is in inttypes.h */
-#define _XOPEN_SOURCE 600
+#define _XOPEN_SOURCE 500 /* Make sure strdup() is in string.h */
+    /* In 2014.09, this was _XOPEN_SOURCE 600, with a comment saying it was
+       necessary to make <inttypes.h> define int_fast32_t, etc. on AIX.
+       <jasper/jasper.h> does use int_fast32_t and does include <inttypes.h>,
+       but plenty of source files of libjasper do to0, and they did not have
+       _XOPEN_SOURCE 600, so it would seem to be superfluous here too.
+    */
 #include <string.h>
+
+#include <jasper/jasper.h>
 
 #include "pm_c_util.h"
 #include "pam.h"
@@ -19,7 +27,6 @@
 #include "nstring.h"
 #include "mallocvar.h"
 
-#include <jasper/jasper.h>
 #include "libjasper_compat.h"
 
 enum compmode {COMPMODE_INTEGER, COMPMODE_REAL};

@@ -2,7 +2,7 @@
 <HTML><HEAD><TITLE>Ppmpat User Manual</TITLE></HEAD>
 <BODY>
 <H1>ppmpat</H1>
-Updated: 24 November 2012
+Updated: 2 March 2016
 <BR>
 <A HREF="#index">Table Of Contents</A>
 
@@ -21,7 +21,10 @@ ppmpat - make a pretty PPM image
 <B>-squig</B> |
 <B>-camo</B> |
 <B>-anticamo</B>
-[<b>-randomseed=</b><i>integer</i>]
+<b>-argyle1</b>
+<b>-argyle2</b>
+[<b>-color</b> <i>colorlist</i>
+[<b>-randomseed</b> <i>integer</i>]
 
 <I>width</I> <I>height</I>
 
@@ -35,14 +38,12 @@ ppmpat - make a pretty PPM image
 <p><b>ppmpat</b> produces a PPM of the specified width and height,
 with a pattern in it.
 
-<P>This program is mainly to demonstrate use of the ppmdraw routines,
-a simple but powerful drawing library.  See the ppmdraw.h include file
-for more info on using these routines.  Still, some of the patterns
-can be rather pretty.  If you have a color workstation, something like
-<B>ppmpat -squig 300 300 | pnmquant 128</B>
-should generate a nice background.
+<p>You could, for example, use it to create wallpaper for a computer screen.
 
-<p>Some of these patterns have large numbers of colors, so if you want
+<p>One use of this program is as an example of the Netpbm library
+<a href="libnetpbm_draw.html">drawing</a> functions, which it uses.
+
+<p>Some of the patterns have large numbers of colors, so if you want
 a simpler pattern, use <b>pnmquant</b> on the output.
 
 <H2 id="options">OPTIONS</H2>
@@ -54,35 +55,99 @@ a simpler pattern, use <b>pnmquant</b> on the output.
 
 <DD>A gingham check pattern.  Can be tiled.
 
+<p>If you specify -color, give two colors: background and foreground, in that
+order.
+
 <DT><B>-gingham3</B>
 
 <DD>A slightly more complicated gingham.  Can be tiled.
+
+<p>If you specify -color, give three colors: background and two foregrounds,
+in that order.
 
 <DT><B>-madras</B>
 
 <DD>A madras plaid.  Can be tiled.
 
+<p>If you specify -color, give three colors: background and two foregrounds,
+in that order.
+
 <DT><B>-tartan</B>
 
 <DD>A tartan plaid.  Can be tiled.
+
+<p>If you specify -color, give three colors: background and two foregrounds,
+in that order.
 
 <DT><B>-poles</B>
 
 <DD>Color gradients centered on randomly-placed poles.
 
+<p>If you specify -color, give two or more colors.
+
 <DT><B>-squig</B>
 
 <DD>Squiggley tubular pattern.  Can be tiled.
+
+<p>If you specify -color, give three or more colors.  The first is the
+background color.
 
 <DT><B>-camo</B>
 
 <DD>Camouflage pattern.
 
+<p>If you specify <b>-color</b>, give three or more colors.  The first is the
+background color; the others are colors for the leafy foreground shapes.
+The foreground shapes will probably occupy nearly the entire image, so that the
+background color is barely visible.
+
 <DT><B>-anticamo</B>
 
 <DD>Anti-camouflage pattern - like -camo, but ultra-bright colors.
 
-<dt><b>-randomseed=</b><i>integer</i>
+<p>If you specify <b>-color</b>, this is the same as <b>-camo</b>.
+
+<DT><B>-argyle1</B>
+
+<DD>A diamond argyle pattern, without a cross through the diamond, with one
+diamond.  Can be tiled.
+
+<p>If you specify -color, give two colors: background and foreground, in that
+order.
+
+<p>This option was new in Netpbm 10.78 (March 2017).
+
+<DT><B>-argyle2</B>
+
+<DD>A diamond argyle pattern, with a cross through the diamond, with one
+diamond.  Can be tiled.
+
+<p>If you specify -color, give three colors: background, foreground, and
+stripe, in that order.
+
+<p>This option was new in Netpbm 10.78 (March 2017).
+
+<dt><b>-color</b> <i>colorlist</i>
+
+<dd>This specifies the colors to appear in the pattern.
+
+<p>If you do not specify this option, <b>ppmpat</b> chooses colors at random.
+
+<p>Different patterns take different numbers of colors.  Some can involve
+variable numbers of colors.  If you specify a number of colors incompatible
+with the pattern you specify, <b>ppmpat</b> fails, telling you how many colors
+to specify.
+
+<p><i>colorlist</i> is a comma-separated list of colors.
+<P>Specify each color as described for the <a
+href="libppm.html#colorname">argument of the <b>ppm_parsecolor()</b>
+library routine</a>.
+
+<p>Example: <b>-color red, green, rgbi:1.0/0.5/.25</b> .
+
+<p>This option was new in Netpbm 10.78 (March 2017).
+
+<dt><b>-randomseed</b> <i>integer</i>
 
 <dd>This is the seed for the random number generator that generates the
 pixels.
@@ -99,7 +164,7 @@ invocations.
 
 <H2 id="references">REFERENCES</H2>
 
-Some of the patterns are from &quot;Designer's Guide to Color 3&quot;
+Some of the patterns are from "Designer's Guide to Color 3"
 by Jeanne Allen.
 
 <H2 id="seealso">SEE ALSO</H2>

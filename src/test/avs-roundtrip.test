@@ -2,6 +2,7 @@
 # This script tests: pamtoavs avstopam
 # Also requires: pamtopnm
 
+
 # Should produce 1926073387 101484, cksum of testimg.ppm
-${PBM_TESTPREFIX}pamtoavs testimg.ppm | \
-  ${PBM_TESTPREFIX}avstopam | ${PBM_BINPREFIX}pamtopnm | cksum
+pamtoavs testimg.ppm | \
+  avstopam | pamtopnm | cksum

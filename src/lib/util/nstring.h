@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include <string.h>
+#include <strings.h>  /* For strncasecmp */
 #include <ctype.h>
 
 #include "pm_c_util.h"
@@ -175,6 +176,9 @@ pm_vasprintf(const char ** const resultP,
              const char *  const format,
              va_list             args);
 
+bool
+pm_vasprintf_knows_float(void);
+
 void 
 pm_strfree(const char * const string);
 
@@ -198,6 +202,11 @@ void
 pm_interpret_uint(const char *   const string,
                unsigned int * const valueP,
                const char **  const errorP);
+
+void
+pm_string_to_uint(const char *   const string,
+                  unsigned int * const uintP,
+                  const char **  const errorP);
 
 #ifdef __cplusplus
 }

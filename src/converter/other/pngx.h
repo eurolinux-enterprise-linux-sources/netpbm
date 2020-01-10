@@ -2,6 +2,10 @@
 #define PNGX_H_INCLUDED
 
 #include <png.h>
+    /* This includes the Zlib interface header file zlib.h because libpng uses
+       libz and some of the Zlib interface, e.g. the Z_DEFLATED constant,
+       is part of the libpng interface.
+    */
 #include "pm_c_util.h"
 
 /* pngx is designed to be an extension of the PNG library to make using
@@ -128,6 +132,20 @@ void
 pngx_setChrm(struct pngx *      const pngxP,
              struct pngx_chroma const chroma);
 
+typedef enum {
+    PNGX_PERCEPTUAL,
+    PNGX_RELATIVE_COLORIMETRIC,
+    PNGX_SATURATION,
+    PNGX_ABSOLUTE_COLORIMETRIC
+} pngx_srgbIntent;
+
+const char *
+pngx_srgbIntentDesc(pngx_srgbIntent const srgbIntent);
+
+void
+pngx_setSrgb(struct pngx *   const pngxP,
+             pngx_srgbIntent const srgbIntent);
+
 void
 pngx_setCompressionSize(struct pngx * const pngxP,
                         unsigned int  const bufferSize);
@@ -190,13 +208,28 @@ pngx_setSigBytes(struct pngx * const pngxP,
                  unsigned int  const sigByteCt);
 
 void
+pngx_setTextKey(png_text *   const textP,
+                const char * const key);
+
+void
+pngx_setTextLang(png_text *   const textP,
+                 const char * const language);
+
+void
+pngx_setTextLangKey(png_text *   const textP,
+                    const char * const key);
+
+void
+pngx_termText(png_text * const textP);
+
+void
 pngx_setText(struct pngx * const pngxP,
              png_textp     const textP,
              unsigned int  const count);
 
 void
 pngx_setTime(struct pngx * const pngxP,
-             png_time      const time);
+             time_t        const timeArg);
 
 void
 pngx_setTrnsPalette(struct pngx *    const pngxP,

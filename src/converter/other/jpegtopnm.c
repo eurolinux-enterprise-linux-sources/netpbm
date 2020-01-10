@@ -48,6 +48,7 @@
     
 *****************************************************************************/
 
+#define _DEFAULT_SOURCE 1  /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE 1      /* Make sure strdup() is in string.h */
 #define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
 
@@ -582,7 +583,7 @@ print_verbose_info_about_header(struct jpeg_decompress_struct const cinfo){
                colorspace_name(cinfo.jpeg_color_space));
 
     /* Note that raw information about marker, including marker type code,
-       was already printed by the jpeg library, due to the jpeg library
+       was already printed by the jpeg library, because of the jpeg library
        trace level >= 1.  Our job is to interpret it a little bit.
     */
     if (cinfo.marker_list)
@@ -652,19 +653,20 @@ print_exif_info(struct jpeg_marker_struct const marker) {
    Dump as informational messages the contents of the Jpeg miscellaneous
    marker 'marker', assuming it is an Exif header.
 -----------------------------------------------------------------------------*/
-    ImageInfo_t imageInfo;
+    bool const wantTagTrace = false;
+    exif_ImageInfo imageInfo;
     const char * error;
 
     assert(marker.data_length >= 6);
 
-    process_EXIF(marker.data+6, marker.data_length-6, 
-                 &imageInfo, FALSE, &error);
+    exif_parse(marker.data+6, marker.data_length-6, 
+               &imageInfo, wantTagTrace, &error);
 
     if (error) {
         pm_message("EXIF header is invalid.  %s", error);
         pm_strfree(error);
     } else
-        ShowImageInfo(&imageInfo);
+        exif_showImageInfo(&imageInfo, stderr);
 }
 
 
@@ -700,8 +702,7 @@ dump_exif(struct jpeg_decompress_struct const cinfo) {
 
     found_one = FALSE;  /* initial value */
 
-    for (markerP = cinfo.marker_list;
-         markerP; markerP = markerP->next) 
+    for (markerP = cinfo.marker_list; markerP; markerP = markerP->next) 
         if (is_exif(*markerP)) {
             pm_message("EXIF INFO:");
             print_exif_info(*markerP);

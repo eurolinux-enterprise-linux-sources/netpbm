@@ -48,28 +48,28 @@ readCmuwmHeader(FILE *         const ifP,
 
     rc = pm_readbiglong(ifP, &l);
     if (rc == -1 )
-        pm_error(initReadError);
+        pm_error("%s", initReadError);
     if ((uint32_t)l != cmuwmMagic)
         pm_error("bad magic number in CMU window manager file");
     rc = pm_readbiglong(ifP, &l);
     if (rc == -1)
-        pm_error(initReadError);
+        pm_error("%s", initReadError);
     *colsP = l;
     rc = pm_readbiglong(ifP, &l);
     if (rc == -1 )
-        pm_error(initReadError);
+        pm_error("%s", initReadError);
     *rowsP = l;
     rc = pm_readbigshort(ifP, &s);
     if (rc == -1)
-        pm_error(initReadError);
+        pm_error("%s", initReadError);
     *depthP = s;
 }
 
 
 
 int
-main(int     argc,
-     char * argv[]) {
+main(int           argc,
+     const char ** argv) {
 
     FILE * ifP;
     unsigned char * bitrow;
@@ -78,7 +78,7 @@ main(int     argc,
 
     const char * inputFileName;
 
-    pbm_init(&argc, argv);
+    pm_proginit(&argc, argv);
 
     if (argc-1 > 1)
         pm_error("Too many arguments (%u).  "
@@ -117,6 +117,7 @@ main(int     argc,
         pbm_writepbmrow_packed(stdout, bitrow, cols, 0);
     }
 
+    pbm_freerow_packed(bitrow);
     pm_close(ifP);
     pm_close(stdout);
 

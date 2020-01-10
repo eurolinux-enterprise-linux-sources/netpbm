@@ -1,19 +1,18 @@
-diff -up netpbm-10.47.05/converter/other/anytopnm.security-scripts netpbm-10.47.05/converter/other/anytopnm
---- netpbm-10.47.05/converter/other/anytopnm.security-scripts	2009-12-10 08:34:36.000000000 +0100
-+++ netpbm-10.47.05/converter/other/anytopnm	2010-03-16 21:28:09.000000000 +0100
-@@ -510,10 +510,7 @@ else
-     inputFile="-"
+diff -urNp old/converter/other/anytopnm neew/converter/other/anytopnm
+--- old/converter/other/anytopnm	2017-09-05 12:58:26.795741945 +0200
++++ neew/converter/other/anytopnm	2017-09-05 13:03:12.985472566 +0200
+@@ -537,9 +537,8 @@ else
+ 
  fi
  
--tempdir="${TMPDIR-/tmp}/anytopnm.$$"
--mkdir -m 0700 $tempdir || \
--  { echo "Could not create temporary file. Exiting."; exit 1;}
+-tempdir=$(mktemp -d "${TMPDIR:-/tmp}/anytopnm.XXXXXXXX") ||
++tempdir=$(mktemp -d -t anytopnm.XXXXXXXX) ||
+     ( echo "Could not create temporary file. Exiting." 1>&2; exit 1; ) 
 -trap 'rm -rf $tempdir' 0
-+tempdir=$(mktemp -d -t anytopnm.XXXXXXXXXX) || exit 1
  
  # Take out all spaces
  # Find the filename extension for last-ditch efforts later
-@@ -539,9 +536,17 @@ if [ "$filetype" = "unknown" ]; then
+@@ -565,9 +564,17 @@ if [ "$filetype" = "unknown" ]; then
      echo "$progname: unknown file type.  " \
          "'file' says mime type is '$mimeType', " 1>&2
      echo "type description is '$typeDescription'" 1>&2
@@ -31,17 +30,16 @@ diff -up netpbm-10.47.05/converter/other/anytopnm.security-scripts netpbm-10.47.
 +fi
 +
  exit 0
-diff -up netpbm-10.47.05/editor/pamstretch-gen.security-scripts netpbm-10.47.05/editor/pamstretch-gen
---- netpbm-10.47.05/editor/pamstretch-gen.security-scripts	2009-12-10 08:34:32.000000000 +0100
-+++ netpbm-10.47.05/editor/pamstretch-gen	2010-03-16 21:28:47.000000000 +0100
-@@ -31,13 +31,9 @@ if [ "$1" = "" ]; then
+diff -urNp old/editor/pamstretch-gen neew/editor/pamstretch-gen
+--- old/editor/pamstretch-gen	2017-09-05 12:58:26.763741946 +0200
++++ neew/editor/pamstretch-gen	2017-09-05 13:03:12.985472566 +0200
+@@ -34,12 +34,10 @@ if [ "$1" = "" ]; then
    exit 1
  fi
  
--tempdir="${TMPDIR-/tmp}/pamstretch-gen.$$"
--mkdir -m 0700 $tempdir || \
--  { echo "Could not create temporary file. Exiting."; exit 1;}
-+tempfile=$(mktemp /tmp/pnmig.XXXXXXXXXX) || exit 1
+-tempdir=$(mktemp -d "${TMPDIR:-/tmp}/netpbm.XXXXXXXX") ||
++tempfile=$(mktemp /tmp/pnmig.XXXXXXXX) ||
+     ( echo "Could not create temporary file. Exiting." 1>&2; exit 1; ) 
  trap 'rm -rf $tempdir' 0 1 3 15
  
 -tempfile=$tempdir/pnmig
@@ -49,59 +47,18 @@ diff -up netpbm-10.47.05/editor/pamstretch-gen.security-scripts netpbm-10.47.05/
  if ! cat $2 >$tempfile 2>/dev/null; then
    echo 'pamstretch-gen: error reading file' 1>&2
    exit 1
-diff -up netpbm-10.47.05/editor/pnmmargin.security-scripts netpbm-10.47.05/editor/pnmmargin
---- netpbm-10.47.05/editor/pnmmargin.security-scripts	2009-12-10 08:34:32.000000000 +0100
-+++ netpbm-10.47.05/editor/pnmmargin	2010-03-16 21:28:09.000000000 +0100
-@@ -11,15 +11,11 @@
- # documentation.  This software is provided "as is" without express or
- # implied warranty.
- 
--tempdir="${TMPDIR-/tmp}/pnmmargin.$$"
--mkdir -m 0700 $tempdir || \
--  { echo "Could not create temporary file. Exiting." 1>&2; exit 1;}
--trap 'rm -rf $tempdir' 0 1 3 15
--
--tmp1=$tempdir/pnmm1
--tmp2=$tempdir/pnmm2
--tmp3=$tempdir/pnmm3
--tmp4=$tempdir/pnmm4
-+tmpdir=$(mktemp -d -t ppmmargin.XXXXXXX) || exit 1
-+tmp1="$tmpdir/tmp1"
-+tmp2="$tmpdir/tmp2"
-+tmp3="$tmpdir/tmp3"
-+tmp4="$tmpdir/tmp4"
- 
- color="-gofigure"
- plainopt=""
-@@ -90,6 +86,7 @@ else
-         -white | -black )
-         pnmpad $plainopt $color \
-             -left=$size -right=$size -top=$size -bottom=$size $tmp1
-+	rm -rf "$tmpdir"
-         exit
-         ;;
-         * )
-@@ -102,7 +99,4 @@ else
-     pnmcat -lr $tmp2 $tmp1 $tmp2 > $tmp4
-     pnmcat -tb $plainopt $tmp3 $tmp4 $tmp3
- fi
--
--
--
--
-+rm -rf "$tmpdir"
-diff -up netpbm-10.47.05/editor/ppmfade.security-scripts netpbm-10.47.05/editor/ppmfade
---- netpbm-10.47.05/editor/ppmfade.security-scripts	2009-12-10 08:34:32.000000000 +0100
-+++ netpbm-10.47.05/editor/ppmfade	2010-03-16 21:28:09.000000000 +0100
-@@ -14,6 +14,7 @@
+diff -urNp old/editor/ppmfade neew/editor/ppmfade
+--- old/editor/ppmfade	2017-09-05 12:58:26.767741946 +0200
++++ neew/editor/ppmfade	2017-09-05 12:59:14.556731156 +0200
+@@ -40,6 +40,7 @@ exec perl -w -x -S -- "$0" "$@"
  #
- #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ ##############################################################################
  use strict;
 +use File::Temp "tempdir";
  
- my $SPREAD =  1;
- my $SHIFT =   2;
-@@ -111,20 +112,26 @@ if ($first_file ne "undefined") {
+ sub doVersionHack($) {
+     my ($argvR) = @_;
+@@ -149,20 +149,26 @@ if ($first_file ne "undefined") {
  
  print("Frames are " . $width . "W x " . $height . "H\n");
  
@@ -132,7 +89,7 @@ diff -up netpbm-10.47.05/editor/ppmfade.security-scripts netpbm-10.47.05/editor/
  }
  
  #
-@@ -132,14 +139,14 @@ if ($last_file eq "undefined") {
+@@ -170,14 +176,14 @@ if ($last_file eq "undefined") {
  #
  
  # Here's what our temporary files are:
@@ -155,7 +112,7 @@ diff -up netpbm-10.47.05/editor/ppmfade.security-scripts netpbm-10.47.05/editor/
  
  my $i;    # Frame number
  for ($i = 1; $i <= $nframes; $i++) {
-@@ -147,147 +154,147 @@ for ($i = 1; $i <= $nframes; $i++) {
+@@ -185,147 +191,147 @@ for ($i = 1; $i <= $nframes; $i++) {
      if ($mode eq $SPREAD) {
          if ($i <= 10) {
              my $n = $spline20[$i] * 100;
@@ -356,20 +313,23 @@ diff -up netpbm-10.47.05/editor/ppmfade.security-scripts netpbm-10.47.05/editor/
 +system("rm $tmpdir/junk*$$.ppm");
  
  exit(0);
-diff -up netpbm-10.47.05/editor/ppmshadow.security-scripts netpbm-10.47.05/editor/ppmshadow
---- netpbm-10.47.05/editor/ppmshadow.security-scripts	2009-12-10 08:34:32.000000000 +0100
-+++ netpbm-10.47.05/editor/ppmshadow	2010-03-16 21:28:09.000000000 +0100
-@@ -72,9 +72,10 @@ sub makeConvolutionKernel($$) {
+diff -urNp old/editor/ppmshadow neew/editor/ppmshadow
+--- old/editor/ppmshadow	2017-09-05 12:58:26.768741946 +0200
++++ neew/editor/ppmshadow	2017-09-05 13:02:51.480507649 +0200
+@@ -171,11 +171,12 @@ my $tmpdir = $ENV{TMPDIR} || "/tmp";
+ my $ourtmp;
  
+ if ($keeptemp) {
+-    $ourtmp = "$tmpdir/ppmshadow$$";
+-    mkdir($ourtmp, 0777) or
+-        die("Unable to create directory for temporary files '$ourtmp");
++    $ourtmp = chomp($ourtmp = `mktemp -d -t PPMshadow.XXXXXX`);
++    if($? >> 8) {
++        die "Can't create directory for temporary files";
++    }
+ } else {
+-    $ourtmp = File::Temp::tempdir("$tmpdir/ppmshadowXXXX", UNLINK=>1);
++    $ourtmp = File::Temp::tempdir("$tmpdir/PPMshadow.XXXXXX", UNLINK=>1);
+ }
  
- my $tmpdir = $ENV{TMPDIR} || "/tmp";
--my $ourtmp = "$tmpdir/ppmshadow$$";
--mkdir($ourtmp, 0777) or
--    die("Unable to create directory for temporary files '$ourtmp");
-+my $ourtmp; chomp($ourtmp = `mktemp -d -t PPMshadow.XXXXXX`);
-+if ($? >> 8) {
-+    die "Can't create directory for temporary files";
-+}
- 
- #   Process command line options
- 
+ #   Apply defaults for arguments not specified

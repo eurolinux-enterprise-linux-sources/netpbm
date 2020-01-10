@@ -14,9 +14,24 @@ include $(BUILDDIR)/config.mk
 # This package is so big, it's useful even when some parts won't 
 # build.
 
-PORTBINARIES = pamfile pammosaicknit pamslice pamsumm pamtilt \
-               pbmminkowski pgmhist pnmhistmap ppmhist pgmminkowski
-MATHBINARIES = pamsharpmap pamsharpness pgmtexture pnmpsnr 
+PORTBINARIES = \
+  pamfile \
+  pammosaicknit \
+  pamslice \
+  pamsumm \
+  pamtable \
+  pamtilt \
+  pbmminkowski \
+  pgmhist \
+  pnmhistmap \
+  ppmhist \
+  pgmminkowski \
+
+MATHBINARIES = \
+  pamsharpmap \
+  pamsharpness \
+  pgmtexture \
+  pnmpsnr \
 
 BINARIES = $(PORTBINARIES) $(MATHBINARIES)
 SCRIPT =
@@ -40,9 +55,9 @@ install.bin: install.bin.local
 install.bin.local: $(PKGDIR)/bin
 # Remember that $(SYMLINK) might just be a copy command.
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) pamslice$(EXE) pgmslice
+	$(SYMLINK) pamslice$(EXE) pgmslice$(EXE)
 	cd $(PKGDIR)/bin ; \
-	$(SYMLINK) pamfile$(EXE) pnmfile
+	$(SYMLINK) pamfile$(EXE) pnmfile$(EXE)
 
 FORCE:
 

@@ -24,17 +24,17 @@ endif
 # build.
 
 PORTBINARIES = pamarith pambayer pamchannel pamdepth \
-	pamendian pamexec pamfixtrunc pamlookup pampick pamsplit \
-	pamstack pamsummcol pnmcolormap \
+	pamendian pamexec pamfix pamlookup pampick pamsplit \
+	pamstack pamsummcol pamunlookup pamvalidate pnmcolormap \
 	ppmdcfont ppmddumpfont ppmdmkfont 
+
+ifneq ($(LINUXSVGALIB),NONE)
+  PORTBINARIES += ppmsvgalib
+endif
 
 BINARIES = $(PORTBINARIES)
 
-ifneq ($(LINUXSVGALIB),NONE)
-  BINARIES += ppmsvgalib
-endif
-
-SCRIPTS = ppmtomap
+SCRIPTS = ppmtomap pamfixtrunc
 
 OBJECTS = $(BINARIES:%=%.o)
 
@@ -50,10 +50,7 @@ all: $(BINARIES) $(SUBDIRS:%=%/all)
 
 include $(SRCDIR)/common.mk
 
-ppmsvgalib: %: %.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $< \
-	  $(shell $(LIBOPT) $(NETPBMLIB) $(LINUXSVGALIB)) \
-	  $(MATHLIB) $(LDFLAGS) $(LDLIBS) $(LADD) 
+ppmsvgalib: LDFLAGS_TARGET = $(shell $(LIBOPT) $(LINUXSVGALIB))
 
 install.bin: install.bin.local
 .PHONY: install.bin.local
@@ -61,15 +58,15 @@ install.bin.local: $(PKGDIR)/bin
 # Remember that $(SYMLINK) might just be a copy command.
 # In July 2002, pamarith replaced pnmarith
 	cd $(PKGDIR)/bin ; \
-	  rm -f pnmarith ; \
-	  $(SYMLINK) pamarith$(EXE) pnmarith
+	  rm -f pnmarith$(EXE) ; \
+	  $(SYMLINK) pamarith$(EXE) pnmarith$(EXE)
 # In December 2005, pamsplit replaced pnmsplit
 	cd $(PKGDIR)/bin ; \
-	  rm -f pnmsplit ; \
-	  $(SYMLINK) pamsplit$(EXE) pnmsplit
+	  rm -f pnmsplit$(EXE) ; \
+	  $(SYMLINK) pamsplit$(EXE) pnmsplit$(EXE)
 # In February 2006, pamdepth replaced pnmdepth
 	cd $(PKGDIR)/bin ; \
-	  rm -f pnmdepth ; \
-	  $(SYMLINK) pamdepth$(EXE) pnmdepth
+	  rm -f pnmdepth$(EXE) ; \
+	  $(SYMLINK) pamdepth$(EXE) pnmdepth$(EXE)
 
 FORCE:

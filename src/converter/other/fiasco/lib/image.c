@@ -3,8 +3,8 @@
  *
  *  Written by:     Ullrich Hafner
  *      
- *  This file is part of FIASCO («F»ractal «I»mage «A»nd «S»equence «CO»dec)
- *  Copyright (C) 1994-2000 Ullrich Hafner <hafner@bigfoot.de>
+ *  This file is part of FIASCO (Fractal Image And Sequence COdec)
+ *  Copyright (C) 1994-2000 Ullrich Hafner
  */
 
 /*
@@ -449,7 +449,7 @@ write_image (const char *image_name, const image_t *image)
    
    if (image->format == FORMAT_4_2_0)
    {
-      warning ("Writing of images in 4:2:0 format not supported.");
+      warning ("We cannot write images in 4:2:0 format.");
       return;
    }
    

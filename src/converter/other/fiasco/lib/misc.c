@@ -6,8 +6,8 @@
  *  Written by:		Stefan Frank
  *			Ullrich Hafner
  *		
- *  This file is part of FIASCO («F»ractal «I»mage «A»nd «S»equence «CO»dec)
- *  Copyright (C) 1994-2000 Ullrich Hafner <hafner@bigfoot.de>
+ *  This file is part of FIASCO (Fractal Image And Sequence COdec)
+ *  Copyright (C) 1994-2000 Ullrich Hafner
  */
 
 /*
@@ -395,22 +395,6 @@ memmove (void *v_dst, const void *v_src, size_t n)
    return v_dst;
 }
 #endif /* not HAVE_MEMMOVE */
-
-#ifndef HAVE_STRDUP
-char *
-strdup (const char *s)
-/*
- *  Duplicate given string 's'.
- *
- *  Return value:
- *	pointer to new string value
- */
-{
-   assert (s);
-   
-   return strcpy (Calloc (strlen (s) + 1, sizeof (char)), s);
-}
-#endif /* not HAVE_STRDUP */
 
 /* Note that some systems have a "log2()" in the math library and some
    have a "log2" macro.  So we name ours Log2.  But to avoid lots of

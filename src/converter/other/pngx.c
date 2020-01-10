@@ -2,7 +2,17 @@
 #include <png.h>
 #include "pm_c_util.h"
 #include "mallocvar.h"
+#include "nstring.h"
 #include "pm.h"
+
+/* <png.h> defines (or doesn't) PNG_iTXt_SUPPORTED to tell us whether libpng
+   has facilities related to PNG iTXt chunks.
+*/
+#ifdef PNG_iTXt_SUPPORTED
+  #define HAVE_PNGLIB_WITH_ITXT 1
+#else
+  #define HAVE_PNGLIB_WITH_ITXT 0
+#endif
 
 #include "pngx.h"
 
@@ -322,6 +332,45 @@ pngx_setChrm(struct pngx *      const pngxP,
 
 
 
+const char *
+pngx_srgbIntentDesc(pngx_srgbIntent const srgbIntent) {
+
+    switch (srgbIntent) {
+    case PNGX_PERCEPTUAL:            return "PERCEPTUAL";
+    case PNGX_RELATIVE_COLORIMETRIC: return "RELATIVE COLORIMETRIC";
+    case PNGX_SATURATION:            return "SATURATION";
+    case PNGX_ABSOLUTE_COLORIMETRIC: return "ABSOLUTE_COLORIMETRIC";
+    }
+    assert(false);
+}
+
+
+
+static int
+const libpngSrgbIntentCode(pngx_srgbIntent const srgbIntent) {
+
+    switch (srgbIntent) {
+    case PNGX_PERCEPTUAL:            return 0;
+    case PNGX_RELATIVE_COLORIMETRIC: return 1;
+    case PNGX_SATURATION:            return 2;
+    case PNGX_ABSOLUTE_COLORIMETRIC: return 3;
+    }
+
+    assert(false);  /* All cases above return */
+}
+
+
+
+void
+pngx_setSrgb(struct pngx *   const pngxP,
+             pngx_srgbIntent const srgbIntent) {
+
+    png_set_sRGB(pngxP->png_ptr, pngxP->info_ptr,
+                 libpngSrgbIntentCode(srgbIntent));
+}
+
+
+
 void
 pngx_setCompressionSize(struct pngx * const pngxP,
                         unsigned int  const bufferSize) {
@@ -357,10 +406,10 @@ pngx_setGama(struct pngx * const pngxP,
 
 void
 pngx_setGamma(struct pngx * const pngxP,
-              float         const displayGamma,
+              float         const screenGamma,
               float         const imageGamma) {
 
-    png_set_gamma(pngxP->png_ptr, displayGamma, imageGamma);
+    png_set_gamma(pngxP->png_ptr, screenGamma, imageGamma);
 }
 
 
@@ -465,8 +514,70 @@ pngx_setSigBytes(struct pngx * const pngxP,
 
 
 void
+pngx_setTextKey(png_text *   const textP,
+                const char * const key) {
+
+    /* textP->key is improperly declared in libpng as char *; should
+       be const char *
+    */
+    textP->key = (char *)pm_strdup(key);
+}
+
+
+
+void
+pngx_setTextLang(png_text *   const textP,
+                 const char * const language) {
+
+#if HAVE_PNGLIB_WITH_ITXT
+    if (language)
+        textP->lang = (char *)pm_strdup(language);
+    else
+        textP->lang = NULL;
+#else
+    if (language)
+        pm_error("PNG library does not have ability to create an iTXT "
+                 "chunk (i.e. to create a PNG with text strings in a language "
+                 "other than English)");
+#endif
+}
+
+
+
+void
+pngx_setTextLangKey(png_text *   const textP,
+                    const char * const key) {
+
+#if HAVE_PNGLIB_WITH_ITXT
+    textP->lang_key = (char *)pm_strdup(key);
+#else
+    pm_error("PNG library does not have ability to create an iTXT "
+             "chunk (i.e. to create a PNG with text strings in a language "
+             "other than English)");
+#endif
+}
+
+
+void
+pngx_termText(png_text * const textP) {
+
+    pm_strfree(textP->key);
+
+#if HAVE_PNGLIB_WITH_ITXT
+    if (textP->lang) {
+        pm_strfree(textP->lang);
+        pm_strfree(textP->lang_key);
+    }
+#endif
+
+    free(textP->text);
+}
+
+
+
+void
 pngx_setText(struct pngx * const pngxP,
-             png_textp     const textP,
+             png_text *    const textP,
              unsigned int  const count) {
 
     png_set_text(pngxP->png_ptr, pngxP->info_ptr, textP, count);
@@ -476,13 +587,13 @@ pngx_setText(struct pngx * const pngxP,
 
 void
 pngx_setTime(struct pngx * const pngxP,
-             png_time      const timeArg) {
+             time_t        const timeArg) {
 
-    png_time time;
+    png_time pngTime;
 
-    time = timeArg;
+    png_convert_from_time_t(&pngTime, timeArg);
 
-    png_set_tIME(pngxP->png_ptr, pngxP->info_ptr, &time);
+    png_set_tIME(pngxP->png_ptr, pngxP->info_ptr, &pngTime);
 }
 
 
@@ -602,7 +713,7 @@ pngx_readEnd(struct pngx * const pngxP) {
 
     /* Note that some of info_ptr is not defined until png_read_end() 
        completes.  That's because it comes from chunks that are at the
-       end of the stream.  In particular, comment and time chunks may
+       end of the stream.  In particular, text and time chunks may
        be at the end.  Furthermore, they may be in both places, in
        which case info_ptr contains different information before and
        after png_read_end().

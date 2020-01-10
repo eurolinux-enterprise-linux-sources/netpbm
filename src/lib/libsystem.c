@@ -1,18 +1,25 @@
 /*=============================================================================
                                  pm_system
 ===============================================================================
-   This is the library subroutine pm_system().  It is just like Standard C
-   Library system(), except that you can supply routines for it to run to
-   generate the Standard Input for the executed shell command and to accept
-   the Standard Output from it.  system(), by contrast, always sets up the
-   current Standard Input and Standard Output as the Standard Input and
-   Standard Output of the shell command.
+   This is the pm_system() family of subroutines.
+
+   pm_system() is just like Standard C Library system(), except that you can
+   supply routines for it to run to generate the Standard Input for the
+   executed shell command and to accept the Standard Output from it.
+   system(), by contrast, always sets up the current Standard Input and
+   Standard Output as the Standard Input and Standard Output of the shell
+   command.
+
+   pm_system_lp() and pm_system_vp() are similar, but exec an OS-level program
+   (i.e. exec a program) rather than run a shell command.
 
    By Bryan Henderson, San Jose CA  2002.12.14.
 
    Contributed to the public domain.
 =============================================================================*/
+#define _DEFAULT_SOURCE /* New name for SVID & BSD source defines */
 #define _XOPEN_SOURCE
+#define _BSD_SOURCE  /* Make SIGWINCH defined on OpenBSD */
 
 #include <stdarg.h>
 #include <unistd.h>
@@ -23,8 +30,9 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-#include "pm_c_util.h"
-#include "mallocvar.h"
+#include "netpbm/pm_c_util.h"
+#include "netpbm/mallocvar.h"
+#include "netpbm/nstring.h"
 #include "pm.h"
 #include "pm_system.h"
 
@@ -163,7 +171,7 @@ spawnProcessor(const char *  const progName,
 /*----------------------------------------------------------------------------
    Create a process to run program 'progName' with arguments
    argArray[] (terminated by NULL element).  Pass file descriptor
-   'stdinFd' to the shell as Standard Input.
+   'stdinFd' to the process as Standard Input.
 
    if 'stdoutFdP' is NULL, have that process write its Standard Output to
    the current process' Standard Output.
@@ -220,6 +228,20 @@ spawnProcessor(const char *  const progName,
 static const char *
 signalName(unsigned int const signalClass) {
 
+/* There are various signal classes that are not universally defined,
+   so we make a half-hearted attempt to determine whether they are and
+   not try to recognize the ones that aren't.  We do this by testing
+   whether a macro is defind with the signal class name.  That could give
+   a false negative, because the signal class name isn't necessarily
+   defined as a macro, but it's a really, really small problem to miss
+   one of these signal classes here, so we don't bother with all the work
+   it would take to do it right.
+
+   OpenBSD does not have SIGWINCH and SIGIO in 2013.  Everyone else seems
+   to have them.  OpenBSD does have them if the code is not declared as
+   X/open code (i.e. OpenBSD seems to interpret _XOPEN_SOURCE backward -
+   it removes features rather than adds them).
+*/
     switch (signalClass) {
     case SIGHUP: /* POSIX.1 */
         return "SIGHUP";
@@ -263,8 +285,11 @@ signalName(unsigned int const signalClass) {
         return "SIGTTIN";
     case SIGTTOU: /* POSIX.1 */
         return "SIGTTOU";
+#ifdef SIGURG
+/* SCO Openserver 5.0.7/3.2 does not have SIGURG */
     case SIGURG:
         return "SIGURG";
+#endif
     case SIGXCPU:
         return "SIGXCPU";
     case SIGXFSZ:
@@ -273,45 +298,66 @@ signalName(unsigned int const signalClass) {
         return "SIGVTALRM";
     case SIGPROF:
         return "SIGPROF";
+#ifdef SIGWINCH
     case SIGWINCH:
         return "SIGWINCH";
+#endif
+#ifdef SIGIO
+/* SCO Openserver 5.0.7/3.2 does not have SIGIO */
     case SIGIO:
         return "SIGIO";
+#endif
+#ifdef SIGPWR
+    case SIGPWR:
+        return "SIGPWR";
+#endif
     case SIGSYS:
         return "SIGSYS";
     default:
         return "???";
-
-        /* There are various other signal classes on some systems, but
-           not defined by POSIX and not on at least one system we
-           know of for which someone wanted to compile Netpbm.  The
-           list includes: SIGPWR, SIGLOST, SIGINFO, SIGRTxx.
-        */
     }
 }
 
 
 
-static void
-cleanupProcessorProcess(pid_t const processorPid) {
+const char *
+pm_termStatusDesc(int const termStatusArg) {
+/*----------------------------------------------------------------------------
+   English description of  process termination status 'termStatus'.
+-----------------------------------------------------------------------------*/
+    const char * retval;
 
-    int terminationStatus;
-    waitpid(processorPid, &terminationStatus, 0);
+    /* WIFEXITED, etc. do not work with a constant argument in older GNU C
+       library.  Compilation fails with "attempt to assign read-only
+       location".  This is because The GNU C library has some magic to allow
+       for a BSD 'union wait' (instead of int) argument to WIFEXITED.  The
+       magic involves defining a variable with 'typeof' the argument and
+       assigning to that variable.
+       
+       To work around this, we make sure the argument is not constant.
+    */
 
-    if (WIFEXITED(terminationStatus)) {
-        int const exitStatus = WEXITSTATUS(terminationStatus);
+    int termStatus = termStatusArg;
 
-        if (exitStatus != 0)
-            pm_message("Shell process exited with abnormal exit status %u.  ",
-                       exitStatus);
-    } else if (WIFSIGNALED(terminationStatus)) {
-        pm_message("Shell process was killed by a Class %u (%s) signal.",
-                   WTERMSIG(terminationStatus),
-                   signalName(WTERMSIG(terminationStatus)));
+    if (WIFEXITED(termStatus)) {
+        int const exitStatus = WEXITSTATUS(termStatus);
+
+        if (exitStatus == 0)
+            pm_asprintf(&retval, "Process exited normally");
+        else
+            pm_asprintf(&retval,
+                        "Process exited with abnormal exit status %u.  ",
+                        exitStatus);
+    } else if (WIFSIGNALED(termStatus)) {
+        pm_asprintf(&retval, "Process was killed by a Class %u (%s) signal.",
+                    WTERMSIG(termStatus),
+                    signalName(WTERMSIG(termStatus)));
     } else {
-        pm_message("Shell process died, but its termination status "
-                   "0x%x  doesn't make sense", terminationStatus);
+        pm_asprintf(&retval, "Process died, but its termination status "
+                    "0x%x  doesn't make sense", termStatus);
     }
+
+    return retval;
 }
 
 
@@ -326,7 +372,7 @@ cleanupFeederProcess(pid_t const feederPid) {
         if (WTERMSIG(status) == SIGPIPE)
             pm_message("WARNING: "
                        "Standard Input feeder process was terminated by a "
-                       "SIGPIPE signal because the shell command closed its "
+                       "SIGPIPE signal because the program closed its "
                        "Standard Input before the Standard Input feeder was "
                        "through feeding it.");
         else
@@ -348,12 +394,13 @@ cleanupFeederProcess(pid_t const feederPid) {
 
 
 void
-pm_system_vp(const char *    const progName,
-             const char **   const argArray,
-             void stdinFeeder(int, void *),
-             void *          const feederParm,
-             void stdoutAccepter(int, void *),
-             void *          const accepterParm) {
+pm_system2_vp(const char *    const progName,
+              const char **   const argArray,
+              void stdinFeeder(int, void *),
+              void *          const feederParm,
+              void stdoutAccepter(int, void *),
+              void *          const accepterParm,
+              int *           const termStatusP) {
 /*----------------------------------------------------------------------------
    Run a program in a child process.  Feed its Standard Input with a
    pipe, which is fed by the routine 'stdinFeeder' with parameter
@@ -366,6 +413,9 @@ pm_system_vp(const char *    const progName,
 
    Run the program 'progName' with arguments argArray[] (terminated by NULL
    element).  That includes arg0.
+
+   Return as *termStatusP the termination status of the processor process
+   (the one running the program named 'progName').
 -----------------------------------------------------------------------------*/
     /* If 'stdinFeeder' is non-NULL, we create a child process to run
        'stdinFeeder' and create a pipe from that process as the
@@ -386,13 +436,23 @@ pm_system_vp(const char *    const progName,
     */
     
     int progStdinFd;
+        /* File descriptor that the processor program will get as Standard
+           Input
+        */
+    bool weCreatedStdinFd;
+        /* This program created (opened) file descriptor 'progStdinFd',
+           as opposed to inheriting it.
+        */
     pid_t feederPid;
     pid_t processorPid;
+    int termStatus;
 
-    if (stdinFeeder) 
+    if (stdinFeeder) {
         createPipeFeeder(stdinFeeder, feederParm, &progStdinFd, &feederPid);
-    else {
+        weCreatedStdinFd = true;
+    } else {
         progStdinFd = STDIN;
+        weCreatedStdinFd = false;
         feederPid = 0;
     }
 
@@ -405,10 +465,6 @@ pm_system_vp(const char *    const progName,
         spawnProcessor(progName, argArray, progStdinFd, 
                        &progStdoutFd, &processorPid);
 
-        /* The child process has cloned our 'progStdinFd'; we have no
-           more use for our copy.
-        */
-        close(progStdinFd);
         /* Dispose of the stdout from that child */
         (*stdoutAccepter)(progStdoutFd, accepterParm);
         close(progStdoutFd);
@@ -419,10 +475,125 @@ pm_system_vp(const char *    const progName,
         spawnProcessor(progName, argArray, progStdinFd, NULL, &processorPid);
     }
 
-    cleanupProcessorProcess(processorPid);
+    if (weCreatedStdinFd) {
+        /* The child process has cloned our 'progStdinFd'; we have no
+           more use for our copy.
+        */
+        close(progStdinFd);
+    }
+
+    waitpid(processorPid, &termStatus, 0);
 
     if (feederPid) 
         cleanupFeederProcess(feederPid);
+
+    *termStatusP = termStatus;
+}
+
+
+
+void
+pm_system2_lp(const char *    const progName,
+              void stdinFeeder(int, void *),
+              void *          const feederParm,
+              void stdoutAccepter(int, void *),
+              void *          const accepterParm,
+              int *           const termStatusP,
+              ...) {
+/*----------------------------------------------------------------------------
+  Same as pm_system_vp() except with arguments as variable arguments
+  instead of an array.
+
+  N.B. the first variable argument is the program's arg 0; the last
+  variable argument must be NULL.
+-----------------------------------------------------------------------------*/
+    va_list args;
+    bool endOfArgs;
+    const char ** argArray;
+    unsigned int n;
+
+    va_start(args, termStatusP);
+
+    endOfArgs = FALSE;
+    argArray = NULL;
+
+    for (endOfArgs = FALSE, argArray = NULL, n = 0;
+         !endOfArgs;
+        ) {
+        const char * const arg = va_arg(args, const char *);
+        
+        REALLOCARRAY(argArray, n+1);
+
+        argArray[n++] = arg;
+
+        if (!arg)
+            endOfArgs = TRUE;
+    }
+
+    va_end(args);
+
+    pm_system2_vp(progName, argArray,
+                  stdinFeeder, feederParm, stdoutAccepter, accepterParm,
+                  termStatusP);
+
+    free(argArray);
+}
+
+
+
+void
+pm_system2(void stdinFeeder(int, void *),
+           void *          const feederParm,
+           void stdoutAccepter(int, void *),
+           void *          const accepterParm,
+           const char *    const shellCommand,
+           int *           const termStatusP) {
+/*----------------------------------------------------------------------------
+   Run a shell and have it run command 'shellCommand'.  Feed its
+   Standard Input with a pipe, which is fed by the routine
+   'stdinFeeder' with parameter 'feederParm'.  Process its Standard
+   Output with the routine 'stdoutAccepter' with parameter 'accepterParm'.
+
+   But if 'stdinFeeder' is NULL, just feed the shell our own Standard
+   Input.  And if 'stdoutFeeder' is NULL, just send its Standard Output
+   to our own Standard Output.
+
+   Return as *termStatusP the termination status of the processor process
+   (the one running the program named 'progName').
+-----------------------------------------------------------------------------*/
+    pm_system2_lp("/bin/sh", 
+                  stdinFeeder, feederParm, stdoutAccepter, accepterParm,
+                  termStatusP,
+                  "sh", "-c", shellCommand, NULL);
+}
+
+
+
+void
+pm_system_vp(const char *    const progName,
+             const char **   const argArray,
+             void stdinFeeder(int, void *),
+             void *          const feederParm,
+             void stdoutAccepter(int, void *),
+             void *          const accepterParm) {
+/*----------------------------------------------------------------------------
+   Same as pm_system2_vp(), except instead of returning the termination
+   status, we just issue a message (pm_message) describing it.
+-----------------------------------------------------------------------------*/
+    int termStatus;
+
+    pm_system2_vp(progName, argArray,
+                  stdinFeeder, feederParm,
+                  stdoutAccepter, accepterParm,
+                  &termStatus);
+
+    if (termStatus != 0) {
+        const char * const msg = pm_termStatusDesc(termStatus);
+
+        pm_message("%s", msg);
+
+        pm_strfree(msg);
+    }
 }
 
 
@@ -435,8 +606,11 @@ pm_system_lp(const char *    const progName,
              void *          const accepterParm,
              ...) {
 /*----------------------------------------------------------------------------
-  same as pm_system_vp() except with arguments as variable arguments
+  Same as pm_system_vp() except with arguments as variable arguments
   instead of an array.
+
+  N.B. the first variable argument is the program's arg 0; the last
+  variable argument must be NULL.
 -----------------------------------------------------------------------------*/
     va_list args;
     bool endOfArgs;
@@ -478,19 +652,62 @@ pm_system(void stdinFeeder(int, void *),
           void *          const accepterParm,
           const char *    const shellCommand) {
 /*----------------------------------------------------------------------------
-   Run a shell and have it run command 'shellCommand'.  Feed its
-   Standard Input with a pipe, which is fed by the routine
-   'stdinFeeder' with parameter 'feederParm'.  Process its Standard
-   Output with the routine 'stdoutAccepter' with parameter 'accepterParm'.
-
-   But if 'stdinFeeder' is NULL, just feed the shell our own Standard
-   Input.  And if 'stdoutFeeder' is NULL, just send its Standard Output
-   to our own Standard Output.
+   Same as pm_system2(), except instead of returning the termination status,
+   we just issue a message (pm_message) describing it.
 -----------------------------------------------------------------------------*/
+    int termStatus;
 
-    pm_system_lp("/bin/sh", 
-                 stdinFeeder, feederParm, stdoutAccepter, accepterParm,
-                 "sh", "-c", shellCommand, NULL);
+    pm_system2(stdinFeeder, feederParm, stdoutAccepter, accepterParm,
+               shellCommand,
+               &termStatus);
+
+    if (termStatus != 0) {
+        const char * const msg = pm_termStatusDesc(termStatus);
+
+        pm_message("%s", msg);
+
+        pm_strfree(msg);
+    }
+}
+
+
+
+void
+pm_feed_null(int    const pipeToFeedFd,
+             void * const feederParm) {
+
+}
+
+
+
+void
+pm_accept_null(int    const pipetosuckFd,
+               void * const accepterParm ) {
+
+    size_t const bufferSize = 4096;
+
+    unsigned char * buffer;
+
+    MALLOCARRAY(buffer, bufferSize);
+
+    if (buffer) {
+        bool eof;
+
+        for (eof = false; !eof; ) {
+            ssize_t rc;
+
+            rc = read(pipetosuckFd, buffer, bufferSize);
+
+            if (rc < 0) {
+                /* No way to report the problem; just say we're done */
+                eof = true;
+            } else if (rc == 0)
+                /* eof */
+                eof = true;
+        }
+        free(buffer);
+    }
+    close(pipetosuckFd);
 }
 
 
@@ -499,22 +716,22 @@ void
 pm_feed_from_memory(int    const pipeToFeedFd,
                     void * const feederParm) {
 
-    struct bufferDesc * const inputBufferP = feederParm;
+    pm_bufferDesc * const inputBufferP = feederParm;
     
-    FILE * const outfile = fdopen(pipeToFeedFd, "w");
+    FILE * const outFileP = fdopen(pipeToFeedFd, "w");
     
-    int bytesTransferred;
+    size_t bytesTransferred;
 
     /* The following signals (and normally kills) the process with
        SIGPIPE if the pipe does not take all 'size' bytes.
     */
     bytesTransferred = 
-        fwrite(inputBufferP->buffer, 1, inputBufferP->size, outfile);
+        fwrite(inputBufferP->buffer, 1, inputBufferP->size, outFileP);
 
     if (inputBufferP->bytesTransferredP)
         *(inputBufferP->bytesTransferredP) = bytesTransferred;
 
-    fclose(outfile);
+    fclose(outFileP);
 }
 
 
@@ -523,17 +740,20 @@ void
 pm_accept_to_memory(int             const pipetosuckFd,
                     void *          const accepterParm ) {
 
-    struct bufferDesc * const outputBufferP = accepterParm;
+    pm_bufferDesc * const outputBufferP = accepterParm;
     
-    FILE * const infile = fdopen(pipetosuckFd, "r");
+    FILE * const inFileP = fdopen(pipetosuckFd, "r");
 
-    int bytesTransferred;
+    size_t bytesTransferred;
 
     bytesTransferred =
-        fread(outputBufferP->buffer, 1, outputBufferP->size, infile);
+        fread(outputBufferP->buffer, 1, outputBufferP->size, inFileP);
 
-    fclose(infile);
+    fclose(inFileP);
 
     if (outputBufferP->bytesTransferredP)
         *(outputBufferP->bytesTransferredP) = bytesTransferred;
 }
+
+
+

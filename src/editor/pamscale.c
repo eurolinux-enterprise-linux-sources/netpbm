@@ -22,7 +22,7 @@
    implied warranty.
 */
 
-#define _XOPEN_SOURCE   /* get M_PI in math.h */
+#define _XOPEN_SOURCE 500  /* get M_PI in math.h */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -411,7 +411,7 @@ enum scaleType {SCALE_SEPARATE, SCALE_BOXFIT, SCALE_BOXFILL, SCALE_PIXELMAX};
        size.
     */
 
-struct cmdlineInfo {
+struct CmdlineInfo {
     /* All the information the user supplied in the command line,
      * in a form easy for the program to use.
      */
@@ -484,7 +484,7 @@ processFilterOptions(unsigned int const         filterSpec,
                      const char                 filterOpt[],
                      unsigned int const         windowSpec,
                      const char                 windowOpt[],
-                     struct cmdlineInfo * const cmdlineP) {
+                     struct CmdlineInfo * const cmdlineP) {
 
     if (filterSpec) {
         filter baseFilter;
@@ -544,7 +544,7 @@ parseSizeParm(const char *   const sizeString,
 static void
 parseXyParms(int                  const argc, 
              const char **        const argv,
-             struct cmdlineInfo * const cmdlineP) {
+             struct CmdlineInfo * const cmdlineP) {
 
     /* parameters are box width (columns), box height (rows), and
        optional filespec 
@@ -573,7 +573,7 @@ parseXyParms(int                  const argc,
 static void
 parseScaleParms(int                   const argc, 
                 const char **         const argv,
-                struct cmdlineInfo  * const cmdlineP) {
+                struct CmdlineInfo  * const cmdlineP) {
 /*----------------------------------------------------------------------------
    Parse the parameters as a scale factor and optional filespec
    (e.g. 'pamscale .5' or 'pamscale .5 testimg.ppm').
@@ -608,7 +608,7 @@ parseScaleParms(int                   const argc,
 static void
 parseFilespecOnlyParms(int                   const argc, 
                        const char **         const argv,
-                       struct cmdlineInfo  * const cmdlineP) {
+                       struct CmdlineInfo  * const cmdlineP) {
 
     /* Only parameter allowed is optional filespec */
     if (argc-1 < 1)
@@ -621,7 +621,7 @@ parseFilespecOnlyParms(int                   const argc,
 static void 
 parseCommandLine(int argc, 
                  const char ** argv, 
-                 struct cmdlineInfo  * const cmdlineP) {
+                 struct CmdlineInfo  * const cmdlineP) {
 /* --------------------------------------------------------------------------
    Parse program command line described in Unix standard form by argc
    and argv.  Return the information in the options as *cmdlineP.  
@@ -747,7 +747,7 @@ parseCommandLine(int argc,
 
 
 static void 
-computeOutputDimensions(struct cmdlineInfo  const cmdline, 
+computeOutputDimensions(struct CmdlineInfo  const cmdline, 
                         unsigned int        const cols, 
                         unsigned int        const rows, 
                         int *               const newcolsP,
@@ -1143,7 +1143,7 @@ createWeightListSet(unsigned int          const sourceSize,
       
    2) Filter out any frequencies that are too high to be captured
       by the new sampling -- i.e. frequencies above 1/2 the new
-      sample rate.  This is the information we must lose due to low
+      sample rate.  This is the information we must lose because of low
       sample rate.
       
    3) Sample the result at the new sample rate.
@@ -1392,7 +1392,7 @@ outputOneResampledRow(const struct pam * const outpamP,
 -----------------------------------------------------------------------------*/
     unsigned int col;
 
-    bool haveOpacity;           /* There is an opacity plane */
+    int haveOpacity;           /* There is an opacity plane */
     unsigned int opacityPlane;  /* Plane number of opacity plane, if any */
 
     pnm_getopacity(outpamP, &haveOpacity, &opacityPlane);
@@ -1656,7 +1656,7 @@ horizontalScale(tuplen *     const inputtuplenrow,
   it by a factor of 'xscale', to create the output row 'newtuplenrow',
   described by *outpamP.
 
-  Due to arithmetic imprecision, we may have to stretch slightly the
+  Because of arithmetic imprecision, we may have to stretch slightly the
   contents of the last pixel of the output row to make a full pixel.
   Return as *stretchP the fraction of a pixel by which we had to
   stretch in this way.
@@ -1697,7 +1697,7 @@ horizontalScale(tuplen *     const inputtuplenrow,
         }
         /* There's not enough left in the current input pixel to fill up 
            a whole output column, so just accumulate the remainder of the
-           pixel into the current output column.  Due to rounding, we may
+           pixel into the current output column.  Because of rounding, we may
            have a tiny bit of pixel left and have run out of output pixels.
            In that case, we throw away what's left.
         */
@@ -1850,7 +1850,7 @@ issueStretchWarning(bool   const verbose,
        row.  
     */
     if (verbose)
-        pm_message("%f of bottom row stretched due to "
+        pm_message("%f of bottom row stretched because of "
                    "arithmetic imprecision", 
                    fracrowtofill);
 }
@@ -1884,7 +1884,7 @@ scaleHorizontallyAndOutputRow(struct pam *             const inpamP,
                         xscale, &stretch);
             
         if (verbose && row == 0)
-            pm_message("%f of right column stretched due to "
+            pm_message("%f of right column stretched because of "
                        "arithmetic imprecision", 
                        stretch);
             
@@ -2139,7 +2139,7 @@ scaleWithoutMixing(const struct pam * const inpamP,
 static void
 pamscale(FILE *             const ifP,
          FILE *             const ofP,
-         struct cmdlineInfo const cmdline) {
+         struct CmdlineInfo const cmdline) {
     
     struct pam inpam, outpam;
     float xscale, yscale;
@@ -2203,9 +2203,9 @@ pamscale(FILE *             const ifP,
 int
 main(int argc, const char **argv ) {
 
-    struct cmdlineInfo cmdline;
+    struct CmdlineInfo cmdline;
     FILE * ifP;
-    bool eof;
+    int eof;
 
     pm_proginit(&argc, argv);
 

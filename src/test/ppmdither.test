@@ -1,7 +1,8 @@
 #! /bin/bash
 # This script tests: ppmdither
-# Also requires: 
+# Also requires:
 
-${PBM_TESTPREFIX}ppmdither testimg.ppm | cksum
-${PBM_TESTPREFIX}ppmdither -red 2 -green 2 -blue 2 testimg.ppm | cksum
-${PBM_TESTPREFIX}ppmdither -dim 2 testimg.ppm | cksum
+
+ppmdither testimg.ppm | cksum
+ppmdither -red 2 -green 2 -blue 2 testimg.ppm | cksum
+ppmdither -dim 2 testimg.ppm | cksum

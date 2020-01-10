@@ -14,11 +14,15 @@ include $(BUILDDIR)/config.mk
 # This package is so big, it's useful even when some parts won't 
 # build.
 
-PORTBINARIES = pamgauss pamgradient pamseq pamstereogram \
-	       pbmpage pbmmake pbmtext pbmtextps pbmupc \
-	       pgmcrater pgmkernel pgmmake pgmnoise pgmramp \
+PORTBINARIES = pamcrater pamgauss pamgradient \
+	       pamseq pamshadedrelief pamstereogram \
+	       pbmpage pbmmake pbmtext pbmupc \
+	       pgmkernel pgmmake pgmnoise pgmramp \
 	       ppmcie ppmcolors ppmforge ppmmake ppmpat ppmrough ppmwheel \
 
+ifneq ($(DONT_HAVE_PROCESS_MGMT),Y)
+PORTBINARIES += pbmtextps 
+endif
 # We don't include programs that have special library dependencies in the
 # merge scheme, because we don't want those dependencies to prevent us
 # from building all the other programs.
@@ -28,7 +32,7 @@ MERGEBINARIES = $(PORTBINARIES)
 
 
 BINARIES = $(MERGEBINARIES) $(NOMERGEBINARIES)
-SCRIPTS = ppmrainbow
+SCRIPTS = pgmcrater ppmrainbow
 
 OBJECTS = $(BINARIES:%=%.o)
 

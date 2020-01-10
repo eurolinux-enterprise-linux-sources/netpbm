@@ -9,6 +9,7 @@
   Contributed to the public domain by its author.
 ******************************************************************************/
 
+#define _DEFAULT_SOURCE 1  /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE 1      /* Make sure strdup() is in string.h */
 #define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
 
@@ -155,7 +156,7 @@ main(int argc, const char *argv[]) {
     struct cmdlineInfo cmdline;
 
     FILE * ifP;
-    bool eof;  /* No more images in input */
+    int eof;  /* No more images in input */
     unsigned int imageSeq;  
         /* Sequence of current image in input file.  First = 0 */
 

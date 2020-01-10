@@ -18,9 +18,9 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "pm_config.h"
-#include "pm_c_util.h"
-#include "mallocvar.h"
+#include "netpbm/pm_config.h"
+#include "netpbm/pm_c_util.h"
+#include "netpbm/mallocvar.h"
 #include "ppm.h"
 #include "ppmdfont.h"
 #include "ppmdraw.h"
@@ -850,7 +850,7 @@ ppmd_spline4p(pixel **       const pixels,
 /*----------------------------------------------------------------------------
    Draw a cubic spline from 'endPt0' to 'endPt1', using 'ctlPt0' and
    'ctlPt1' as control points in the classic way: a line through
-   'endPt0' and 'ctlPt0' is tangent to the curve at 'entPt0' and the
+   'endPt0' and 'ctlPt0' is tangent to the curve at 'endPt0' and the
    length of that line controls "enthusiasm," whatever that is.
    Same for 'endPt1' and 'ctlPt1'.
 -----------------------------------------------------------------------------*/
@@ -981,7 +981,7 @@ typedef struct fillobj {
 
     /* The only reason we have a struct fillState separate from
        struct fillobj is that the drawproc interface is defined to
-       have drawing not modify the fillobj, i.e. it passed
+       have drawing not modify the fillobj, i.e. it passes
        const fillobj * to the drawing program.
     */
     struct fillState * stateP;
@@ -1116,14 +1116,13 @@ continueSegment(struct fillState * const stateP,
 
 
 
-
 /* ppmd_fill_drawprocp() is a drawproc that turns an outline drawing function
    into a filled shape function.  This is a somewhat off-label application of
    a drawproc:  A drawproc is intended just to draw a point.  So e.g. you
    might draw a circle with a fat brush by calling ppmd_circle with a drawproc
    that draws a point as a 10-pixel disk.
 
-   But ppmd_fill_drawproc() just draws a point the trivial way: as one pixel.
+   But ppmd_fill_drawprocp() just draws a point the trivial way: as one pixel.
    However, it tracks every point that is drawn in a form that a subsequent
    ppmd_fill() call can use to to fill in the shape drawn, assuming it turns
    out to be a closed shape.
@@ -1191,12 +1190,12 @@ ppmd_fill_drawproc(pixel**      const pixels,
 
 
 #ifndef LITERAL_FN_DEF_MATCH
-static qsort_comparison_fn yx_compare;
+static qsort_comparison_fn yxCompare;
 #endif
 
 static int
-yx_compare(const void * const c1Arg,
-           const void * const c2Arg) {
+yxCompare(const void * const c1Arg,
+          const void * const c2Arg) {
 
     const coord * const c1P = c1Arg;
     const coord * const c2P = c2Arg;
@@ -1258,7 +1257,7 @@ ppmd_fill(pixel **         const pixels,
     ppmd_setlineclip(oldclip);
 
     /* Sort the coords by Y, secondarily by X. */
-    qsort((char*) fh->coords, fh->n, sizeof(coord), yx_compare);
+    qsort((char*) fh->coords, fh->n, sizeof(coord), yxCompare);
 
     /* Find equal coords with different edge numbers, and swap if necessary. */
     edge = -1;

@@ -3,8 +3,8 @@
  *
  *  Written by:		Ullrich Hafner
  *		
- *  This file is part of FIASCO («F»ractal «I»mage «A»nd «S»equence «CO»dec)
- *  Copyright (C) 1994-2000 Ullrich Hafner <hafner@bigfoot.de>
+ *  This file is part of FIASCO (Fractal Image And Sequence COdec)
+ *  Copyright (C) 1994-2000 Ullrich Hafner
  */
 
 /*
@@ -29,28 +29,45 @@
 #include "wfalib.h"
 #include "tiling.h"
 
-/*****************************************************************************
 
-				prototypes
-  
-*****************************************************************************/
-
-static int
-cmpdecvar (const void *value1, const void *value2);
-static int
-cmpincvar (const void *value1, const void *value2);
-
-/*****************************************************************************
-
-				public code
-  
-*****************************************************************************/
 
 typedef struct var_list
 {
    int	  address;			/* bintree address */
    real_t variance;			/* variance of tile */
 } var_list_t;
+
+#ifndef LITERAL_FN_DEF_MATCH
+static qsort_comparison_fn cmpincvar;
+#endif
+
+static int
+cmpincvar(const void * const value1,
+          const void * const value2) {
+/*----------------------------------------------------------------------------
+  Sorts by increasing variances (quicksort sorting function)
+-----------------------------------------------------------------------------*/
+    return
+        ((var_list_t *) value1)->variance - ((var_list_t *) value2)->variance;
+}
+
+
+
+#ifndef LITERAL_FN_DEF_MATCH
+static qsort_comparison_fn cmpdecvar;
+#endif
+
+static int
+cmpdecvar(const void * const value1,
+          const void * const value2) {
+/*----------------------------------------------------------------------------
+  Sorts by decreasing variances (quicksort sorting function).
+-----------------------------------------------------------------------------*/
+    return
+        ((var_list_t *) value2)->variance - ((var_list_t *) value1)->variance;
+}
+
+
 
 tiling_t *
 alloc_tiling (fiasco_tiling_e method, unsigned tiling_exponent,
@@ -207,33 +224,10 @@ perform_tiling (const image_t *image, tiling_t *tiling)
       }
       else
       {
-	 warning ("Unsupported image tiling method.\n"
+	 warning ("We do not know the tiling method.\n"
 		  "Skipping image tiling step.");
 	 tiling->exponent = 0;
       }
    }
 }
 
-/*****************************************************************************
-
-				private code
-  
-*****************************************************************************/
-
-static int
-cmpincvar (const void *value1, const void *value2)
-/*
- *  Sorts by increasing variances (quicksort sorting function).
- */
-{
-  return ((var_list_t *) value1)->variance - ((var_list_t *) value2)->variance;
-}
-
-static int
-cmpdecvar (const void *value1, const void *value2)
-/*
- *  Sorts by decreasing variances (quicksort sorting function).
- */
-{
-  return ((var_list_t *) value2)->variance - ((var_list_t *) value1)->variance;
-}

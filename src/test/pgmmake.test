@@ -1,10 +1,7 @@
 #! /bin/bash
 # This script tests: pgmmake
-# Also requires: 
-
-${PBM_TESTPREFIX}pgmmake 1 50 50 | cksum
-${PBM_TESTPREFIX}pgmmake .2 50 100 -maxval=5 | cksum 
+# Also requires:
 
 
-
- 
+pgmmake 1 50 50 | cksum
+pgmmake .2 50 100 -maxval=5 | cksum

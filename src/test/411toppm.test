@@ -1,6 +1,7 @@
 #! /bin/bash
 # This script tests: 411toppm
-# Also requires: 
+# Also requires:
+
 
 # Test 1. should produce: 240376509 9229
 # The above value is what 411toppm has been always producing.
@@ -9,4 +10,4 @@
 #
 # See comment at head of source file 411toppm.c.
 
-head -c 4608 /dev/zero | ${PBM_TESTPREFIX}411toppm -quiet | cksum
+head -c 4608 /dev/zero | 411toppm -quiet | cksum

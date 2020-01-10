@@ -1,6 +1,7 @@
 #! /bin/bash
 # This script tests: hdifftopam pamtohdiff
-# Also requires: 
+# Also requires:
 
-${PBM_TESTPREFIX}pamtohdiff testimg.ppm | \
-  ${PBM_TESTPREFIX}hdifftopam -pnm | cksum
+
+pamtohdiff testimg.ppm | \
+  hdifftopam -pnm | cksum

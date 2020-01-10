@@ -1,357 +1,54 @@
-diff --git a/userguide/cameratopam.html b/userguide/cameratopam.html
-index 7a6391e..89f6939 100644
---- a/userguide/cameratopam.html
-+++ b/userguide/cameratopam.html
-@@ -163,7 +163,7 @@ means.
- href="http://www.cybercom.net/~dcoffin/dcraw/"><b>dcraw</b> by Dave
- Coffin</a>, by Bryan Henderson in April 2005.  Bryan replaced the part
- that generates the Netpbm output image and removed the Adobe Photoshop
--output function.  Bryan changed the command syntax and and made other
-+output function.  Bryan changed the command syntax and made other
- small changes to make the program consistent with Netpbm.  He also
- split the source code into manageable pieces (<b>dcraw</b> has a
- single 5000 line source file).
-diff --git a/userguide/fiascotopnm.html b/userguide/fiascotopnm.html
-index 2cd4f01..f1f1b17 100644
---- a/userguide/fiascotopnm.html
-+++ b/userguide/fiascotopnm.html
-@@ -76,7 +76,7 @@ Set magnification of the decompressed image. Positive values enlarge
- and negative values reduce the image width and height by a factor of
- 2^|<I>N</I>|.
+diff -urNp old/userguide/libnetpbm_ug.html new/userguide/libnetpbm_ug.html
+--- old/userguide/libnetpbm_ug.html	2017-09-05 14:20:09.734743404 +0200
++++ new/userguide/libnetpbm_ug.html	2017-09-05 14:47:30.496705483 +0200
+@@ -374,7 +374,7 @@ plain format.
+ <H2 id="reference">Reference</h2>
  
--<DT><B>-s</B> <I>N</I>, <B>--smooth=</B><I>N</I>
-+<DT><B>-s</B> <I>N</I>, <B>--smoothing=</B><I>N</I>
- <DD>
- Smooth decompressed image(s) along the partitioning borders by the
- given amount <I>N</I>. <I>N</I> is 1 (minimum) to 100 (maximum); default
-@@ -88,6 +88,10 @@ FIASCO file is used (defined by the FIASCO coder).
- Set number of frames per second to <I>N</I>. When using this option,
- the frame rate specified in the FIASCO file is overridden.
+ <p>The <a href="libnetpbm_image.html">Libnetpbm Netpbm Image
+-Processing Manual</a> describes the the <b>libnetpbm</b> functions for
++Processing Manual</a> describes the <b>libnetpbm</b> functions for
+ processing image data.
  
-+<DT><B>--verbose=</B><I>N</I>
-+<DD>
-+Set verbose of <B>fiascotopnm</B> to <I>N</I>.
-+
- <DT><B>-v</B>, <B>--version</B>
- <DD>
- Print <B>fiascotopnm</B> version number, then exit.
-diff --git a/userguide/pamdepth.html b/userguide/pamdepth.html
-index 1a2b5fd..c188e44 100644
---- a/userguide/pamdepth.html
-+++ b/userguide/pamdepth.html
-@@ -52,7 +52,7 @@ files before April 2000.
- <b>pnmdepth</b>, by Jef Poskanzer.  <b>pamdepth</b> is backward compatible
- with <b>pnmdepth</b> and adds the ability to process arbitrary PAM images
- and the ability to process multi-image input streams.  <b>pnmdepth</b>
--handled only PNM images and ignored all but the the first in any stream.
-+handled only PNM images and ignored all but the first in any stream.
+ <p>The <a href="libpm.html">Libnetpbm Utility Manual</a>
+diff -urNp old/userguide/pamfunc.html new/userguide/pamfunc.html
+--- old/userguide/pamfunc.html	2017-09-05 14:20:09.738743398 +0200
++++ new/userguide/pamfunc.html	2017-09-05 14:47:41.760644848 +0200
+@@ -57,7 +57,7 @@ output image.
+ and bit string (such as and with 01001000).  For the arithmetic functions, the
+ function arguments and results are the fraction that a sample is of the
+ maxval, i.e. normal interpretation of PAM tuples.  But for the bit string
+-functions, the value is the the bit string whose value as a binary cipher is
++functions, the value is the bit string whose value as a binary cipher is
+ the sample value, and the maxval indicates the width of the bit string.
  
- <HR>
- <H2 id="index">Table Of Contents</H2>
-diff --git a/userguide/pamdice.html b/userguide/pamdice.html
-index 0659e15..9053113 100644
---- a/userguide/pamdice.html
-+++ b/userguide/pamdice.html
-@@ -139,7 +139,7 @@ in each direction.
- <B><A HREF="pgmslice.html">pgmslice</A></B>,
- <B><A HREF="ppmglobe.html">ppmglobe</A></B>
- <B><A HREF="pnm.html">pnm</A></B>
--<B><A HREF="pam.html">pnm</A></B>
-+<B><A HREF="pam.html">pam</A></B>
- 
- <HR>
- <H2 id="index">Table Of Contents</H2>
-diff --git a/userguide/pamstereogram.html b/userguide/pamstereogram.html
-index c337547..652b887 100644
---- a/userguide/pamstereogram.html
-+++ b/userguide/pamstereogram.html
-@@ -319,7 +319,7 @@ be.  Lower (darker) numbers mean further from the eye.
- 
- <h3 id="inputimages">Input Images</h3>
- 
--<p><b>pamstereogram</b> pays no attention the the image's tuple
-+<p><b>pamstereogram</b> pays no attention the image's tuple
- type and ignores all planes other than plane 0.</p>
- 
- <p>Like any Netpbm program, <b>pamstereogram</b> will accept PNM
-diff --git a/userguide/pamtofits.html b/userguide/pamtofits.html
-index 445b326..0ecc806 100644
---- a/userguide/pamtofits.html
-+++ b/userguide/pamtofits.html
-@@ -54,7 +54,7 @@ approximation.
- <h3 id="pixelorder">Pixel Order</h3>
- 
- <p>The FITS specification does not specify which data in the file corresponds
--to which pixel in the image (i.e. which bytes are the the top left pixel,
-+to which pixel in the image (i.e. which bytes are the top left pixel,
- etc.).  Netpbm uses the common sense, most popular arrangement: row major, top
- to bottom, left to right.  That means in a 10 wide by 20 high image, the first
- 10 pixels in the file are the top row and the last 10 are the bottom row.
-diff --git a/userguide/pamtojpeg2k.html b/userguide/pamtojpeg2k.html
-index 06b6113..046d740 100644
---- a/userguide/pamtojpeg2k.html
-+++ b/userguide/pamtojpeg2k.html
-@@ -181,7 +181,7 @@ its goal is similar to JPEG.  It has two main differences from JPEG.
- <p>One difference is that it does a much better job on most images of
- throwing out information in order to achieve a smaller output.  That
- means when you reconstruct the image from the resulting compressed
--file, it looks a lot closer to the image you started with with
-+file, it looks a lot closer to the image you started with
- JPEG-2000 than with JPEG, for the same compressed file size.  Or, looked
- at another way, with JPEG-2000 you get a much smaller file than with 
- JPEG for the same image quality.
-diff --git a/userguide/pamtotiff.html b/userguide/pamtotiff.html
-index f07d227..c7a48a0 100644
---- a/userguide/pamtotiff.html
-+++ b/userguide/pamtotiff.html
-@@ -124,7 +124,7 @@ format it produces are therefore controlled by that library.
- <P>By default, <B>pamtotiff</B> creates a TIFF file with no
- compression.  This is your best bet most of the time.  If you want to
- try another compression scheme or tweak some of the other even more
--obscure output options, there are a number of options which which to
-+obscure output options, there are a number of options which to
- play.
- 
- <p>Before Netpbm 8.4 (April 2000), the default was to use LZW compression.
-diff --git a/userguide/pamtouil.html b/userguide/pamtouil.html
-index 1074119..6c2356b 100644
---- a/userguide/pamtouil.html
-+++ b/userguide/pamtouil.html
-@@ -57,7 +57,7 @@ in the RGB database.
- <A NAME="lbAF">&nbsp;</A>
- <H2>SEE ALSO</H2>
- 
--<A HREF="pamstack.html">pam</A>
-+<A HREF="pamstack.html">pamstack</A>
- <A HREF="pam.html">pam</A>
- <A HREF="ppm.html">ppm</A>
- 
-diff --git a/userguide/pamundice.html b/userguide/pamundice.html
-index 2b789b4..bf366d6 100644
---- a/userguide/pamundice.html
-+++ b/userguide/pamundice.html
-@@ -208,7 +208,7 @@ clips the bottom edge of each image before joining it to the one below.
- <B><A HREF="pnmindex.html">pnmindex</A></B>,
- <B><A HREF="pnmtile.html">pnmtile</A></B>,
- <B><A HREF="pnm.html">pnm</A></B>
--<B><A HREF="pam.html">pnm</A></B>
-+<B><A HREF="pam.html">pam</A></B>
- 
- <HR>
- <H2 id="index">Table Of Contents</H2>
-diff --git a/userguide/pbm.html b/userguide/pbm.html
-index 63dfa40..7db4886 100644
---- a/userguide/pbm.html
-+++ b/userguide/pbm.html
-@@ -136,7 +136,7 @@ P1
- accepting anything that looks remotely like a bitmap.
- 
- <p>All characters referred to herein are encoded in ASCII.
--&quot;newline&quot; refers the the character known in ASCII as Line
-+&quot;newline&quot; refers the character known in ASCII as Line
- Feed or LF.  A &quot;white space&quot; character is space, CR, LF,
- TAB, VT, or FF (I.e. what the ANSI standard C isspace() function
- calls white space).
-diff --git a/userguide/pbmtolj.html b/userguide/pbmtolj.html
-index ce7e9bb..6da4555 100644
---- a/userguide/pbmtolj.html
-+++ b/userguide/pbmtolj.html
-@@ -83,7 +83,7 @@ and end of the output file.
- 
- <DT><B>-copies</B>
- 
--<DD>Specifies the the number of copies. The default is 1.  This option
-+<DD>Specifies the number of copies. The default is 1.  This option
- controls the &quot;number of copies&quot; printer control;
- <B>pbmtolj</B> generates only one copy of the image.
- 
-diff --git a/userguide/pgm.html b/userguide/pgm.html
-index d75c9ef..7df1abc 100644
---- a/userguide/pgm.html
-+++ b/userguide/pgm.html
-@@ -153,7 +153,7 @@ P2
- accepting anything that looks remotely like a PGM.
- 
- <p>All characters referred to herein are encoded in ASCII.
--&quot;newline&quot; refers the the character known in ASCII as Line
-+&quot;newline&quot; refers the character known in ASCII as Line
- Feed or LF.  A &quot;white space&quot; character is space, CR, LF,
- TAB, VT, or FF (I.e. what the ANSI standard C isspace() function
- calls white space).
-diff --git a/userguide/pngtopam.html b/userguide/pngtopam.html
-index 8185843..09406ef 100644
---- a/userguide/pngtopam.html
-+++ b/userguide/pngtopam.html
-@@ -269,7 +269,7 @@ change to the package in Netpbm's renaissance.  It and <b>pnmtopng</b>
- were simply copied from the <a
- href="http://www.libpng.org/pub/png/apps/pnmtopng.html">
- <b>pnmtopng</b> package</a> by Greg Roelofs.  Those were based on
--simpler reference applications by by Alexander Lehmann
-+simpler reference applications by Alexander Lehmann
- &lt;alex@hal.rhein-main.de&gt; and Willem van Schaik
- &lt;willem@schaik.com&gt; and distributed with their PNG library.
- 
-diff --git a/userguide/pnmnorm.html b/userguide/pnmnorm.html
-index c4d2558..5d3ca49 100644
---- a/userguide/pnmnorm.html
-+++ b/userguide/pnmnorm.html
-@@ -146,7 +146,7 @@ value 99 or the white value 101.
- option.  Sometimes, too much contrast is a bad thing.  If your
- intensities are all concentrated in the middle, <b>-bpercent=2</b> and
- <b>-wpercent=1</b> might mean that an intensity of 60 gets stretched
--up to 100 and and intensity of 20 gets stretched down to zero, for a
-+up to 100 and intensity of 20 gets stretched down to zero, for a
- range expansion of 150% (from a range of 40 to a range of 100).  That
- much stretching means two adjacent pixels that used to differ in
- intensity by 4 units now differ by 10, and that might be unsightly.
-diff --git a/userguide/pnmtopalm.html b/userguide/pnmtopalm.html
-index 94aa6ff..9ca9c0d 100644
---- a/userguide/pnmtopalm.html
-+++ b/userguide/pnmtopalm.html
-@@ -164,7 +164,7 @@ the <b>-colormap</b> option, for much the same reason.
- 
- <dt><b>-withdummy</b>
+ <h4>Arithmetic functions</h4>
+diff -urNp old/userguide/pbmtextps.html new/userguide/pbmtextps.html
+--- old/userguide/pbmtextps.html	2017-09-05 14:20:09.736743401 +0200
++++ new/userguide/pbmtextps.html	2017-09-05 14:47:58.840553598 +0200
+@@ -185,7 +185,7 @@ edge of the type.  See <a href="#margins
+ <dt><b>-ascent=</b><i>n</i>
+ <dt><b>-descent=</b><i>n</i>
  <dd>
--This option tells <b>pnmtopalm</b> to put in the stream, after after
-+This option tells <b>pnmtopalm</b> to put in the stream, after
- the image, a dummy image header to introduce subsequent high density
- images.
+-These options control the the margins added to the image, measured from
++These options control the margins added to the image, measured from
+ the text baseline.  See <a href="#margins">Margins</a> for details.
  
-diff --git a/userguide/ppm.html b/userguide/ppm.html
-index c71aaa4..8e7a111 100644
---- a/userguide/ppm.html
-+++ b/userguide/ppm.html
-@@ -158,7 +158,7 @@ P3
- accepting anything that looks remotely like a PPM image.
- 
- <p>All characters referred to herein are encoded in ASCII.
--&quot;newline&quot; refers the the character known in ASCII as Line
-+&quot;newline&quot; refers the character known in ASCII as Line
- Feed or LF.  A &quot;white space&quot; character is space, CR, LF,
- TAB, VT, or FF (I.e. what the ANSI standard C isspace() function
- calls white space).
-diff --git a/userguide/ppmtopj.html b/userguide/ppmtopj.html
-index c07c1d9..b50be28 100644
---- a/userguide/ppmtopj.html
-+++ b/userguide/ppmtopj.html
-@@ -61,7 +61,7 @@ You could convert your input to this format like this:
-     pnmremap -map 8color.pam testimg.pam | ppmtopj
- </pre>
- 
--Or you could use use
-+Or you could use 
- <pre>
-     ppmdither -red 2 -green 2 -blue 2
- </pre>
-diff --git a/userguide/qrttoppm.html b/userguide/qrttoppm.html
-index b6bf976..112bf50 100644
---- a/userguide/qrttoppm.html
-+++ b/userguide/qrttoppm.html
-@@ -22,7 +22,7 @@ qrttoppm - convert output from the QRT ray tracer to a PPM image
- 
- <p>This program is part of <a href="index.html">Netpbm</a>.
- 
--<p><b>qrttoppm</b> reads a QRT file as input and and produces a PPM
-+<p><b>qrttoppm</b> reads a QRT file as input and produces a PPM
- image as output.
- 
- <A NAME="lbAE">&nbsp;</A>
-diff --git a/userguide/sbigtopgm.html b/userguide/sbigtopgm.html
-index 400bcaf..78f9454 100644
---- a/userguide/sbigtopgm.html
-+++ b/userguide/sbigtopgm.html
-@@ -22,7 +22,7 @@ sbigtopgm - convert an SBIG CCDOPS file to PGM
- 
- <p>This program is part of <a href="index.html">Netpbm</a>.
- 
--<p><b>sbigtopgm</b> reads an an image file in the native format used
-+<p><b>sbigtopgm</b> reads an image file in the native format used
- by the Santa Barbara Instrument Group (SBIG) astronomical CCD cameras,
- and produces a PGM image as output.  Additional information on SBIG
- cameras and documentation of the file format is available at the Web
-diff --git a/userguide/srftopam.html b/userguide/srftopam.html
-index b27f133..c98586f 100644
---- a/userguide/srftopam.html
-+++ b/userguide/srftopam.html
-@@ -30,7 +30,7 @@
- 
- <p>This program is part of <a href="index.html">Netpbm</a>.</p>
- 
--<p><b>srftopam</b> reads a a SRF image file as input and produces a
-+<p><b>srftopam</b> reads a SRF image file as input and produces a
- multi-image stream of PAM images as output.
- 
- <p>This program performs the inverse of the conversion that <b>pamtosrf</b>
-diff --git a/userguide/sunicontopnm.html b/userguide/sunicontopnm.html
-index 6ccbcde..0290f7b 100644
---- a/userguide/sunicontopnm.html
-+++ b/userguide/sunicontopnm.html
-@@ -54,7 +54,7 @@ mostly XPM files.
- <A HREF="xbmtoppm.html">xbmtoppm</A>,
- <A HREF="infotopam.html">infotopam</A>,
- <A HREF="pbm.html">pbm</A>
--<A HREF="pgm.html">pbm</A>
-+<A HREF="pgm.html">pgm</A>
- 
+ <p>Sizes are in points, as a floating point number.
+diff -urNp old/userguide/pbmtog3.html new/userguide/pbmtog3.html
+--- old/userguide/pbmtog3.html	2017-09-05 14:20:09.735743403 +0200
++++ new/userguide/pbmtog3.html	2017-09-05 14:48:55.648255793 +0200
+@@ -77,7 +77,7 @@ You cannot specify both.
  <H2 id="history">HISTORY</H2>
  
-diff --git a/userguide/xpmtoppm.html b/userguide/xpmtoppm.html
-index c7c857b..f96b249 100644
---- a/userguide/xpmtoppm.html
-+++ b/userguide/xpmtoppm.html
-@@ -46,7 +46,7 @@ alpha output to Standard Output and discards the image.
- the alpha output file.
+ <p>Before Netpbm 10.79 (June 2017), there was a different program by the same
+-name in Netpbm, which was written by by Paul Haeberli
++name in Netpbm, which was written by Paul Haeberli
+ &lt;<A HREF="mailto:paul@manray.sgi.com">paul@manray.sgi.com</A>&gt; in 1989
+ and then modified extensively by others.
  
- <p><b>xpmtoppm</b> can't handle a line longer than 8K characters in
--the the XPM input.  If an input line exceeds this limit,
-+the XPM input.  If an input line exceeds this limit,
- <b>xpmtoppm</b> quits with an error message to that effect.  Before
- Netpbm 10.30 (October 2005), the limit was 2K.
- 
-diff --git a/userguide/infotopam.html b/userguide/infotopam.html
-index 9818c59..177f4d4 100644
---- a/userguide/infotopam.html
-+++ b/userguide/infotopam.html
-@@ -110,7 +110,7 @@ using the <i>-forcecolor</i> option.</p>
-   <p>To override the colors, first specify how many colors to override using
-   <i>-numcolors</i>, then specify an (<i>index color</i>) pair for each color
-   you want to override, where <i>index</i> is a value from 0 to 3 and
--  <i>color</i> the the new color for that index.  Specify <i>color</i> as
-+  <i>color</i> the new color for that index.  Specify <i>color</i> as
-   described for the <a href= "libppm.html#colorname"><b>ppm_parsecolor()</b>
-   argument</a>.</p></dd>
- 
-diff --git a/userguide/pbmtoppa.html b/userguide/pbmtoppa.html
-index f2ccf11..e0abe05 100644
---- a/userguide/pbmtoppa.html
-+++ b/userguide/pbmtoppa.html
-@@ -254,7 +254,7 @@ StartEntry: DeskJet720C
- &nbsp;&nbsp;About:&nbsp;{&nbsp;\
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This&nbsp;driver&nbsp;supports&nbsp;the&nbsp;HP&nbsp;DeskJet&nbsp;720C&nbsp;\
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inkjet&nbsp;printer.&nbsp;\
--&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;It&nbsp;does&nbsp;does&nbsp;not&nbsp;support&nbsp;color&nbsp;printing.&nbsp;\
-+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;It&nbsp;does&nbsp;not&nbsp;support&nbsp;color&nbsp;printing.&nbsp;\
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IMPORTANT!&nbsp;Insert&nbsp;\
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&quot;-&nbsp;|&nbsp;pbm2ppa&nbsp;-&quot;&nbsp;\
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;the&nbsp;&quot;Extra&nbsp;GS&nbsp;Options&quot;&nbsp;field.\
-diff --git a/userguide/pnmgamma.html b/userguide/pnmgamma.html
-index 574d7d9..4c884f5 100644
---- a/userguide/pnmgamma.html
-+++ b/userguide/pnmgamma.html
-@@ -242,7 +242,7 @@ the output is the same as that of the input.
- 
- <p>Because the transformation is not linear, you need a greater maxval
- in the output in order not to lose any information from the input.
--For example, if you convert to radiance-linear sample values with with
-+For example, if you convert to radiance-linear sample values with 
- <kbd>-ungamma -bt709ramp</kbd> and default gamma value, and your maxval is
- 255 on both input and output, 3 different input sample values all
- generate output sample value 254.  In order to have a different output
-diff --git a/userguide/ppmtompeg.html b/userguide/ppmtompeg.html
-deleted file mode 100644
-index 4fa4a53..0000000
---- a/userguide/ppmtompeg.html
-+++ /dev/null
+diff -urNp old/userguide/ppmtompeg.html new/userguide/ppmtompeg.html
+--- old/userguide/ppmtompeg.html	2017-09-05 14:20:09.739743396 +0200
++++ new/userguide/ppmtompeg.html	1970-01-01 01:00:00.000000000 +0100
 @@ -1,1291 +0,0 @@
 -<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
 -<HTML>
@@ -1378,7 +1075,7 @@ index 4fa4a53..0000000
 -("predictive" frame) describes a movie frame by describing how it
 -differs from the movie frame described by the latest preceding I  or
 -P frame.  A B frame ("bidirectional" frame) describes a movie frame by
--describing how it differs from the the movie frames described by the
+-describing how it differs from the movie frames described by the
 -nearest I or P frame before <em>and</em> after it.
 -
 -<p>Note that the first frame of a movie must be described by an I
@@ -1470,7 +1167,7 @@ index 4fa4a53..0000000
 -
 -<P>You can run <b>ppmtompeg</b> on multiple machines at once, encoding
 -the same MPEG stream.  When you do, the machines are used as shown in
--the following diagram.  We call this &quot;parallel mode.&quot;
+-the following diagram.  We call this "parallel mode."
 -
 -<p><img src="ppmtompeg-par.gif" alt="ppmtompeg-par.gif">
 -
@@ -1520,8 +1217,8 @@ index 4fa4a53..0000000
 -parameter file statement when you do parallel operation.
 -
 -<p>The machine on which you originally invoke <b>ppmtompeg</b> is the
--master machine.  It hosts a &quot;combine server,&quot;, a
--&quot;decode server,&quot; and a number of &quot;i/o servers,&quot;
+-master machine.  It hosts a "combine server,", a
+-"decode server," and a number of "i/o servers,"
 -all as separate processes.  The other machines in the network (listed
 -in the parameter file) are slave machines.  Each hosts a single
 -process that continuously requests work from the master and does it.

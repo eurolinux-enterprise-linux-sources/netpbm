@@ -13,7 +13,7 @@ else
 LIBNETPBM = $(NETPBMSHLIBPREFIX)netpbm$(DLLVER).$(NETPBMLIBSUFFIX)
 endif
 
-ifeq ($(STATICLIB_TOO),y)
+ifeq ($(STATICLIB_TOO),Y)
 EXTRA_STATICLIB = libnetpbm.$(STATICLIBSUFFIX)
 else
 EXTRA_STATICLIB =
@@ -25,9 +25,10 @@ else
   LIBSYSTEM = libsystem.o
 endif
 
-LIBOBJECTS = libpm.o pmfileio.o fileio.o bitio.o colorname.o \
+LIBOBJECTS = libpm.o pmfileio.o fileio.o colorname.o \
 	libpamd.o \
-	libpbm1.o libpbm2.o libpbm3.o libpbmfont.o \
+	libpbm1.o libpbm2.o libpbm3.o \
+	libpbmfont.o pbmfontdata1.o pbmfontdata2.o \
 	libpgm1.o libpgm2.o \
 	libppm1.o libppm2.o libppmcmap.o libppmcolor.o libppmfuzzy.o \
 	libppmd.o ppmdfont.o standardppmdfont.o path.o \
@@ -39,12 +40,14 @@ LIBOBJECTS = libpm.o pmfileio.o fileio.o bitio.o colorname.o \
 
 # Library objects to be linked but not built by common.mk:
 LIBOBJECTS_X = \
+  util/bitio.o \
   util/filename.o \
   util/io.o \
   util/mallocvar.o \
   util/matrix.o \
   util/nsleep.o \
   util/nstring.o \
+  util/runlength.o \
   util/shhopt.o \
   util/token.o \
   util/vasprintf.o \
@@ -52,11 +55,11 @@ LIBOBJECTS_X = \
 MANUALS3 = libnetpbm
 MANUALS5 = pbm pgm ppm pnm pam
 
-INTERFACE_HEADERS = bitio.h colorname.h \
+INTERFACE_HEADERS = colorname.h \
 	pam.h pamdraw.h pammap.h pbm.h pbmfont.h \
 	pgm.h pm.h pm_gamma.h pm_system.h pnm.h \
 	ppm.h ppmcmap.h ppmdfont.h ppmdraw.h ppmfloyd.h \
-	util/mallocvar.h util/shhopt.h \
+	util/mallocvar.h util/runlength.h util/shhopt.h \
 
 DATAFILES = rgb.txt
 
@@ -68,6 +71,7 @@ SCRIPTS =
 BINARIES = 
 
 OMIT_LIBRARY_RULE = 1
+ALL_INTERNAL_HEADER_FILES_ARE_QUALIFIED = Y
 include $(SRCDIR)/common.mk
 
 # The following must go after common.mk because $(LIBNETPBM) may 
@@ -84,13 +88,12 @@ extra_staticlib: $(EXTRA_STATICLIB)
 # type, but request a static library in addition.
 #----------------------------------------------------------------------------
 
-# Note that the user may have configured -I options into CPPFLAGS/CFLAGS.
-CFLAGS_ALL = $(INCLUDES) -DNDEBUG $(CPPFLAGS) $(CFLAGS) $(CFLAGS_SHLIB) \
- $(CFLAGS_PERSONAL) $(CADD)
+$(LIBOBJECTS): CFLAGS_TARGET=$(CFLAGS_SHLIB)
+
+libpbm3.o: CFLAGS_TARGET+=$(CFLAGS_SSE)
 
 $(LIBOBJECTS): %.o: %.c importinc
-# We have to get the command all on one line to avoid messy make messages
-	$(CC) -c $(CFLAGS_ALL) -o $@ $<
+	$(CC) -c $(INCLUDES) $(CFLAGS_ALL) -o $@ $<
 
 MAJ = 11
 MIN = $(NETPBM_MINOR_RELEASE)
@@ -131,7 +134,7 @@ libnetpbm.$(NETPBMLIBSUFFIX).$(MAJ).$(MIN): $(LIBOBJECTS) $(LIBOBJECTS_X)
 endif
 
 ifeq ($(NETPBMLIBTYPE),dll)
-ifeq ($(STATICLIB_TOO),y)
+ifeq ($(STATICLIB_TOO),Y)
 $(NETPBMSHLIBPREFIX)netpbm$(DLLVER).dll: $(LIBOBJECTS) $(LIBOBJECTS_X) libnetpbm.$(STATICLIBSUFFIX)
 else
 $(NETPBMSHLIBPREFIX)netpbm$(DLLVER).dll: $(LIBOBJECTS) $(LIBOBJECTS_X)
@@ -171,16 +174,16 @@ endif
 # STATICLIB_SUFFIX may just be arbitrary.
 #-----------------------------------------------------------------------------
 ifeq ($(NETPBMLIBTYPE),unixstatic)
-  BUILD_STATICLIB = y
+  BUILD_STATICLIB = Y
 else
-  ifeq ($(STATICLIB_TOO),y)
-    BUILD_STATICLIB = y
+  ifeq ($(STATICLIB_TOO),Y)
+    BUILD_STATICLIB = Y
   else
-    BUILD_STATICLIB = n
+    BUILD_STATICLIB = N
   endif
 endif
 
-ifeq ($(BUILD_STATICLIB),y)
+ifeq ($(BUILD_STATICLIB),Y)
 libnetpbm.$(STATICLIBSUFFIX): $(LIBOBJECTS) $(LIBOBJECTS_X)
 	-rm -f $@
 	$(AR) rc $@ $(LIBOBJECTS) $(LIBOBJECTS_X)
@@ -188,11 +191,14 @@ libnetpbm.$(STATICLIBSUFFIX): $(LIBOBJECTS) $(LIBOBJECTS_X)
 endif
 
 
-# To avoid major hassles with having ppmdcfont available here, we just
-# ship a pre-made standardppmfont.c, so this rule will not normally be
-# used.
-standardppmdfont.c:standard.ppmdfont
-	ppmdcfont <$< >$@
+# To avoid major hassles with having ppmdcfont available here, we just ship a
+# pre-made standardppmfont.c, so this rule will not normally be used.  Though
+# standardppmdfont.c depends upon standard.ppmdfont, we don't declare that
+# here because when the user creates the source tree, the modification time of
+# standard.ppmdfont may end up later than that of standardppmdfont.c, which
+# would make the build want to rebuild it.
+standardppmdfont.c:
+	ppmdcfont <standard.ppmdfont >$@
 
 # Note that we create a new compile.h only for the first make after a
 # make clean.  This is good enough.  We used to do stamp-date for

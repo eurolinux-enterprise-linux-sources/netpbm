@@ -4,6 +4,7 @@
  * 2-24-98
  */
 
+#define _DEFAULT_SOURCE /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE
     /* This makes sure strcasecmp() is in string.h */
 #include <stdio.h>
@@ -63,9 +64,14 @@ print_pbm(FILE * const in) {
         ppa_init_page(&printer);
         ppa_load_page(&printer);
 
-        sweeps[0].direction = right_to_left;
+        sweeps[0].direction   = right_to_left;
+        sweeps[0].image_data  = NULL;
+        sweeps[0].nozzle_data = NULL;
         sweeps[0].next=&sweeps[1];
-        sweeps[1].direction = left_to_right;
+
+        sweeps[1].direction   = left_to_right;
+        sweeps[1].image_data  = NULL;
+        sweeps[1].nozzle_data = NULL;
         sweeps[1].next=&sweeps[0];
 
         current_sweep=0;
@@ -88,6 +94,8 @@ print_pbm(FILE * const in) {
                     ppa_print_sweep(&printer, &sweeps[previous_sweep]);
                     free(sweeps[previous_sweep].image_data);
                     free(sweeps[previous_sweep].nozzle_data);
+                    sweeps[previous_sweep].image_data = NULL;
+                    sweeps[previous_sweep].nozzle_data = NULL;
                 }
                 previous_sweep=current_sweep;
                 current_sweep= current_sweep==0 ? 1 : 0;
@@ -106,6 +114,10 @@ print_pbm(FILE * const in) {
         free(sweeps[0].nozzle_data);
         free(sweeps[1].image_data);
         free(sweeps[1].nozzle_data);
+        sweeps[0].image_data = NULL;
+        sweeps[0].nozzle_data = NULL;
+        sweeps[1].image_data = NULL;
+        sweeps[1].nozzle_data = NULL;
 
         ppa_eject_page(&printer);
 

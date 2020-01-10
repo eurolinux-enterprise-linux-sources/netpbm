@@ -34,19 +34,19 @@ and produces a PPM image as output.
 <DD><B>xpmtoppm</B> creates a PBM file containing the transparency
 mask for the image.  If the input image doesn't contain transparency
 information, the <I>alpha-filename</I> file contains all white
-(opaque) alpha values.  If you don't specify <B>--alphaout</B>,
-<B>xpmtoppm</B> does not generate an alpha file, and if the input
+(opaque) transparency values.  If you don't specify <B>--alphaout</B>,
+<B>xpmtoppm</B> does not generate a transparency file, and if the input
 image has transparency information, <B>xpmtoppm</B> simply discards
 it.
 
 <P>If you specify <B>-</B> as the filename, <B>xpmtoppm</B> writes the
-alpha output to Standard Output and discards the image.
+transparency output to Standard Output and discards the image.
 
 <P>See <B><A HREF="pamcomp.html">pamcomp</A></B> for one way to use
-the alpha output file.
+the transparency output file.
 
 <p><b>xpmtoppm</b> can't handle a line longer than 8K characters in
-the the XPM input.  If an input line exceeds this limit,
+the XPM input.  If an input line exceeds this limit,
 <b>xpmtoppm</b> quits with an error message to that effect.  Before
 Netpbm 10.30 (October 2005), the limit was 2K.
 
@@ -63,7 +63,7 @@ Netpbm 10.30 (October 2005), the limit was 2K.
 Version 3; i.e. it rejects as invalid many valid XPM images.
 
 <p>The only place a comment block is valid is starting in Column 1 of the
-line immediately after &quot;static char ...&quot;.
+line immediately after "static char ...".
 
 <p>In addition, <b>ppmtoxpm</b> properly recognizes any single-line
 comment that begins in Column 1 in the color table part of the file.

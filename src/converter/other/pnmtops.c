@@ -5,16 +5,16 @@
    We produce two main kinds of Postscript program:
 
       1) Use built in Postscript filters /ASCII85Decode, /ASCIIHexDecode,
-	 /RunLengthDecode, and /FlateDecode;
+         /RunLengthDecode, and /FlateDecode;
 
-	 We use methods we learned from Dirk Krause's program Bmeps.
-	 Previous versions used raster encoding code based on Bmeps
-	 code.  This program does not used any code from Bmeps.
+         We use methods we learned from Dirk Krause's program Bmeps.
+         Previous versions used raster encoding code based on Bmeps
+         code.  This program does not used any code from Bmeps.
 
       2) Use our own filters and redefine /readstring .  This is aboriginal
-	 Netpbm code, from when Postscript was young.  The filters are
-	 nearly identical to /ASCIIHexDecode and /RunLengthDecode.  We
-	 use the same raster encoding code with slight modifications.
+         Netpbm code, from when Postscript was young.  The filters are
+         nearly identical to /ASCIIHexDecode and /RunLengthDecode.  We
+         use the same raster encoding code with slight modifications.
 
    (2) is the default.  (1) gives more options, but relies on features
    introduced in Postscript Level 2, which appeared in 1991.  Postcript
@@ -33,6 +33,7 @@
    goes in separate from the rest of the raster.
 */
 
+#define _DEFAULT_SOURCE /* New name for SVID & BSD source defines */
 #define _BSD_SOURCE  /* Make sure string.h contains strdup() */
 #define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
 #include <stdlib.h>
@@ -42,6 +43,8 @@
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
+#include <signal.h>
 #ifndef NOFLATE
 #include <zlib.h>
 #endif
@@ -51,8 +54,40 @@
 #include "mallocvar.h"
 #include "shhopt.h"
 #include "nstring.h"
+#include "runlength.h"
 
-struct cmdlineInfo {
+
+
+static void
+setSignals() {
+/*----------------------------------------------------------------------------
+   Set up the process-global signal-related state.
+
+   Note that we can't rely on defaults, because much of this is inherited
+   from the process that forked and exec'ed this program.
+-----------------------------------------------------------------------------*/
+    /* See waitForChildren() for why we do this to SIGCHLD */
+
+    struct sigaction sigchldAction;
+    int rc;
+    sigset_t emptySet;
+
+    sigemptyset(&emptySet);
+
+    sigchldAction.sa_handler = SIG_DFL;
+    sigchldAction.sa_mask = emptySet;
+    sigchldAction.sa_flags = SA_NOCLDSTOP;
+
+    rc = sigaction(SIGCHLD, &sigchldAction, NULL);
+
+    if (rc != 0)
+        pm_error("sigaction() to set up signal environment failed, "
+                 "errno = %d (%s)", errno, strerror(errno));
+}
+
+
+
+struct CmdlineInfo {
     /* All the information the user supplied in the command line,
        in a form easy for the program to use.
     */
@@ -81,8 +116,10 @@ struct cmdlineInfo {
     unsigned int dict;
     unsigned int vmreclaim;
     unsigned int verbose;
+    unsigned int debug;
 };
 
+static bool debug;
 static bool verbose;
 
 
@@ -172,7 +209,7 @@ validateCompDimension(unsigned int const value,
 
 static void
 parseCommandLine(int argc, const char ** argv,
-                 struct cmdlineInfo * const cmdlineP) {
+                 struct CmdlineInfo * const cmdlineP) {
 
     unsigned int imagewidthSpec, imageheightSpec;
     float imagewidth, imageheight;
@@ -215,6 +252,7 @@ parseCommandLine(int argc, const char ** argv,
     OPTENT3(0, "vmreclaim",   OPT_FLAG,  NULL, &cmdlineP->vmreclaim,     0);
     OPTENT3(0, "showpage",    OPT_FLAG,  NULL, &showpage,                0);
     OPTENT3(0, "verbose",     OPT_FLAG,  NULL, &cmdlineP->verbose,       0);
+    OPTENT3(0, "debug",       OPT_FLAG,  NULL, &cmdlineP->debug,         0);
     OPTENT3(0, "level",       OPT_UINT, &cmdlineP->level, 
             &cmdlineP->levelSpec,              0);
     
@@ -335,6 +373,33 @@ basebasename(const char * const filespec) {
 
 
 
+static void
+writeFile(const unsigned char * const buffer,
+          size_t                const writeCt,
+          const char *          const name,
+          FILE *                const ofP) {
+
+    size_t writtenCt;
+
+    writtenCt = fwrite(buffer, 1, writeCt, ofP);
+
+    if (writtenCt != writeCt)
+        pm_error("Error writing to %s output file", name);
+}
+
+
+
+static void
+writeFileChar(const char * const buffer,
+              size_t       const writeCt,
+              const char * const name,
+              FILE *       const ofP) {
+
+    writeFile((const unsigned char *)buffer, writeCt, name, ofP);
+}
+
+
+
 #define MAX_FILTER_CT 10
     /* The maximum number of filters this code is capable of applying */
 
@@ -379,6 +444,42 @@ typedef struct {
 
 
 
+static unsigned int
+bytesPerRow (unsigned int const cols,
+             unsigned int const bitsPerSample) {
+/*----------------------------------------------------------------------------
+  Size of row buffer, padded up to byte boundary, given that the image
+  has 'cols' samples per row, 'bitsPerSample' bits per sample.
+-----------------------------------------------------------------------------*/
+    unsigned int retval;
+
+    assert(bitsPerSample==1 || bitsPerSample==2 || bitsPerSample==4 || 
+           bitsPerSample==8 || bitsPerSample==12);
+
+    switch (bitsPerSample) {
+    case 1:
+    case 2:
+    case 4:
+        retval = cols / (8/bitsPerSample)
+            + (cols % (8/bitsPerSample) > 0 ? 1 : 0);
+        /* A more straightforward calculation would be
+           (cols * bitsPerSample + 7) / 8 ,
+           but this overflows when icols is large.
+        */
+        break;
+    case 8:
+        retval = cols;
+        break;
+    case 12:
+        retval = cols + (cols+1)/2;
+        break;
+    }
+
+    return retval;
+}
+
+
+
 static void
 initOutputEncoder(OutputEncoder  * const oeP,
                   unsigned int     const icols,
@@ -388,20 +489,12 @@ initOutputEncoder(OutputEncoder  * const oeP,
                   bool             const ascii85,
                   bool             const psFilter) {
 
-    unsigned int const bytesPerRow = icols / (8/bitsPerSample) +
-        (icols % (8/bitsPerSample) > 0 ? 1 : 0);
-        /* Size of row buffer, padded up to byte boundary.
-
-           A more straightforward calculation would be
-           (icols * bitsPerSample + 7) / 8 ,
-           but this overflows when icols is large.
-        */
-
     oeP->outputType = ascii85 ? Ascii85 : AsciiHex;
 
     if (rle) {
         oeP->compressRle = true;
-        oeP->runlengthRefresh = psFilter ? INT_MAX : bytesPerRow;
+        oeP->runlengthRefresh =
+             psFilter ? 1024*1024*16 : bytesPerRow(icols, bitsPerSample);
     } else
         oeP->compressRle = false;
 
@@ -494,18 +587,12 @@ flateFilter(FILE *          const ifP,
         */
         do {
             unsigned int have;
-            size_t bytesWritten;
 
             strm.avail_out = chunkSz;
             strm.next_out = out;
             deflate(&strm, flush);
             have = chunkSz - strm.avail_out;
-            bytesWritten = fwrite(out, 1, have, ofP);
-            if (ferror(ofP) || bytesWritten != have) {
-                deflateEnd(&strm);
-                pm_error("Error writing to internal pipe during "
-                         "flate compression.");
-            }
+            writeFile(out, have, "flate filter", ofP);
         } while (strm.avail_out == 0);
         assert(strm.avail_in == 0);     /* all input is used */
 
@@ -534,27 +621,9 @@ flateFilter(FILE *          const ifP,
    In native (non-psfilter) mode, the run length filter must flush at
    the end of every row.  But the entire raster is sent to the run length
    filter as one continuous stream.  The run length filter learns the
-   refresh interval from oeP->runlengthRefresh.
+   refresh interval from oeP->runlengthRefresh.  In ps-filter mode the
+   run length filter ignores row boundaries and flushes every 4096 bytes.
 */
-
-
-static void
-rlePutBuffer (unsigned int    const repeat,
-              unsigned int    const count,
-              unsigned int    const repeatitem,
-              unsigned char * const itembuf,
-              FILE *          const fP) {
-
-    if (repeat) {
-        fputc(257 - count,  fP);
-        fputc(repeatitem, fP);
-    } else {
-        fputc(count - 1, fP);
-        fwrite(itembuf, 1, count, fP);
-    }
-}
-
-
 
 static FilterFn rleFilter;
 
@@ -563,96 +632,31 @@ rleFilter (FILE *          const ifP,
            FILE *          const ofP,
            OutputEncoder * const oeP) {
 
-    unsigned int const refresh = oeP->runlengthRefresh;
+    unsigned int const inSize = oeP->runlengthRefresh;
 
     bool eof;
-    bool repeat;
-    unsigned int count;
-    unsigned int incount;
-    unsigned int repeatcount;
-    unsigned char repeatitem;
-    unsigned char itembuf[128];
+    unsigned char * inbuf;
+    unsigned char * outbuf;
+    size_t outSize;
 
-    repeat = true; /* initial value */
-    count = 0; /* initial value */
+    MALLOCARRAY(inbuf, inSize);
+    if (inbuf == NULL)
+        pm_error("Failed to allocate %u bytes of memory for RLE filter",
+                  inSize);
+    pm_rlenc_allocoutbuf(&outbuf, inSize, PM_RLE_PACKBITS);
 
-    for (eof = false, incount = 0; !eof; ) {
-        int rleitem;
+    for (eof = false; !eof; ) {
+        size_t const bytesRead = fread(inbuf, 1, inSize, ifP);
 
-        rleitem = fgetc(ifP);
-        if (rleitem == EOF)
+        if (feof(ifP))
             eof = true;
-        else {
-            ++incount;
+        else if (ferror(ifP) || bytesRead == 0)
+            pm_error("Internal read error: RLE compression");
 
-            if (repeat && count == 0) {
-                /* Still initializing a repeat buf. */
-                itembuf[count++] = repeatitem = rleitem;
-            }
-            else if (repeat) {
-                /* Repeating - watch for end of run. */
-                if (rleitem == repeatitem) {
-                    /* Run continues. */
-                    itembuf[count++] = rleitem;
-                } else {
-                    /* Run ended */
-                    if (count > 2) {
-                        /* Long enough to dump, so dump a repeat-mode buffer
-                           and start a new one.
-                        */
-                        rlePutBuffer(repeat, count, repeatitem, itembuf, ofP);
-                        repeat = true;
-                        count = 0;
-                        itembuf[count++] = repeatitem = rleitem;
-                    } else {
-                        /* Not long enough - convert to non-repeat mode. */
-                        repeat = false;
-                        itembuf[count++] = repeatitem = rleitem;
-                        repeatcount = 1;
-                    }
-                }
-            } else {
-                /* Not repeating - watch for a run worth repeating. */
-                if (rleitem == repeatitem) {
-                    /* Possible run continues. */
-                    ++repeatcount;
-                    if (repeatcount > 3) {
-                        /* Long enough - dump non-repeat part and start
-                           repeat.
-                        */
-                        unsigned int i;
-                        count = count - (repeatcount - 1);
-                        rlePutBuffer(repeat, count, repeatitem, itembuf, ofP);
-                        repeat = true;
-                        count = repeatcount;
-                        for (i = 0; i < count; ++i)
-                            itembuf[i] = rleitem;
-                    } else {
-                        /* Not long enough yet - continue as non-repeat buf. */
-                        itembuf[count++] = rleitem;
-                    }
-                } else {                    /* Broken run. */
-                    itembuf[count++] = repeatitem = rleitem;
-                    repeatcount = 1;
-                }
-            }
-
-            if (incount == refresh) {
-                rlePutBuffer(repeat, count, repeatitem, itembuf, ofP);
-                repeat = true;
-                count = incount = 0;
-            }
-
-            if (count == 128) {
-                rlePutBuffer(repeat, count, repeatitem, itembuf, ofP);
-                repeat = true;
-                count = 0;
-            }
-        }
+        pm_rlenc_compressbyte(inbuf, outbuf, PM_RLE_PACKBITS,
+                              bytesRead, &outSize);
+        writeFile(outbuf, outSize, "rlePutBuffer", ofP);
     }
-
-    if (count > 0)
-        rlePutBuffer(repeat, count, repeatitem, itembuf, ofP);
 
     fclose(ifP);
     fclose(ofP);
@@ -673,23 +677,23 @@ asciiHexFilter(FILE *          const ifP,
     unsigned char inbuff[40], outbuff[81];
 
     for (eof = false; !eof; ) {
-        size_t bytesRead;
+        size_t readCt;
 
-        bytesRead = fread(inbuff, 1, 40, ifP);
+        readCt = fread(inbuff, 1, 40, ifP);
 
-        if (bytesRead == 0)
+        if (readCt == 0)
             eof = true;
         else {
             unsigned int i;
 
-            for (i = 0; i < bytesRead; ++i) {
+            for (i = 0; i < readCt; ++i) {
                 int const item = inbuff[i]; 
                 outbuff[i*2]   = hexits[item >> 4];
                 outbuff[i*2+1] = hexits[item & 15];
             }
+            outbuff[readCt * 2] = '\n';
+            writeFile(outbuff, readCt * 2 + 1, "asciiHex filter", ofP);
         }
-        outbuff[bytesRead * 2] = '\n';
-        fwrite(outbuff, 1, bytesRead*2 + 1, ofP);
     }
 
     fclose(ifP);
@@ -727,7 +731,8 @@ ascii85Filter(FILE *          const ifP,
             ++count;
 
             if (value == 0 && count == 4) {
-                putchar('z');  /* Ascii85 encoding z exception */
+                writeFileChar("z", 1, "ASCII 85 filter", ofP);
+                    /* Ascii85 encoding z exception */
                 ++outcount;
                 count = 0;
             } else if (count == 4) {
@@ -737,13 +742,14 @@ ascii85Filter(FILE *          const ifP,
                 outbuff[1] = value % 85 + 33;
                 outbuff[0] = value / 85 + 33;
 
-                fwrite(outbuff, 1, count + 1, ofP);
+                writeFileChar(outbuff, count + 1, "ASCII 85 filter", ofP);
+
                 count = value = 0;
                 outcount += 5; 
             }
 
             if (outcount > 75) {
-                putchar('\n');
+                writeFileChar("\n", 1, "ASCII 85 filter", ofP);
                 outcount = 0;
             }
         }
@@ -759,7 +765,7 @@ ascii85Filter(FILE *          const ifP,
         outbuff[0] = value / 85 + 33;
         outbuff[count + 1] = '\n';
 
-        fwrite(outbuff, 1, count + 2, ofP);
+        writeFileChar(outbuff, count + 2, "ASCII 85 filter", ofP);
     }
 
     fclose(ifP);
@@ -869,21 +875,36 @@ addFilter(const char *    const description,
           OutputEncoder * const oeP,
           FILE **         const feedFilePP,
           pid_t *         const pidList) {
+/*----------------------------------------------------------------------------
+   Add a filter to the front of the chain.
 
-    pid_t pid;
+   Spawn a process to do the filtering, by running function 'filter'.
 
+   *feedFilePP is the present head of the chain.  We make the new filter
+   process write its output to that and get its input from a new pipe.
+   We update *feedFilePP to the sending end of the new pipe.
+
+   Add to the list pidList[] the PID of the process we spawn.
+-----------------------------------------------------------------------------*/
     FILE * const oldFeedFileP = *feedFilePP;
 
     FILE * newFeedFileP;
-        
+    pid_t pid;
+
     spawnFilter(oldFeedFileP, filter, oeP, &newFeedFileP, &pid);
             
     if (verbose)
         pm_message("%s filter spawned: pid %u",
                    description, (unsigned)pid);
     
+    if (debug) {
+        int const outFd    = fileno(oldFeedFileP);
+        int const supplyFd = fileno(newFeedFileP);
+        pm_message("PID %u writes to FD %u, its supplier writes to FD %u",
+                   (unsigned)pid, outFd, supplyFd);
+    }
     fclose(oldFeedFileP);  /* Child keeps this open now */
-    
+
     addToPidList(pidList, pid);
 
     *feedFilePP = newFeedFileP;
@@ -945,6 +966,15 @@ waitForChildren(const pid_t * const pidList) {
    Wait for all child processes with PIDs in pidList[] to exit.
    In pidList[], end-of-list is marked with a special zero value.
 -----------------------------------------------------------------------------*/
+    /* There's an odd behavior in Unix such that if you have set the
+       action for SIGCHLD to ignore the signal (even though ignoring the
+       signal is the default), the process' children do not become
+       zombies.  Consequently, waitpid() always fails with ECHILD - but
+       nonetheless waits for the child to exit.
+    
+       We expect the process not to have the action for SIGCHLD set that
+       way.
+    */
     unsigned int i;
 
     for (i = 0; pidList[i]; ++i) {
@@ -956,7 +986,8 @@ waitForChildren(const pid_t * const pidList) {
 
         rc = waitpid(pidList[i], &status, 0);
         if (rc == -1)
-            pm_error ("waitpid() for child %u failed", i);
+            pm_error ("waitpid() for child %u failed, errno=%d (%s)",
+                      i, errno, strerror(errno));
         else if (status != EXIT_SUCCESS)
             pm_error ("Child process %u terminated abnormally", i);
     }
@@ -987,6 +1018,19 @@ validateComputableBoundingBox(float const scols,
                  "for computations.  "
                  "This probably means input image width, height, "
                  "or scale factor is too large", bbWidth, bbHeight);
+}
+
+
+
+static void
+warnUserRescaling(float const scale) {
+
+    const char * const baseMsg = "warning, image too large for page";
+
+    if (pm_have_float_format())
+        pm_message("%s; rescaling to %g", baseMsg, scale);
+    else
+        pm_message("%s; rescaling", baseMsg);
 }
 
 
@@ -1098,8 +1142,7 @@ computeImagePosition(int     const dpiX,
         *srowsP = scale * rows * pixfacY;
     
         if (scale != requestedScale)
-            pm_message("warning, image too large for page, rescaling to %g", 
-                       scale );
+            warnUserRescaling(scale);
 
         /* Before May 2001, Pnmtops enforced a 5% margin around the page.
            If the image would be too big to leave a 5% margin, Pnmtops would
@@ -1708,19 +1751,15 @@ convertRowPbm(struct pam *     const pamP,
 ----------------------------------------------------------------------*/
     unsigned int colChar;
     unsigned int const colChars = pbm_packed_bytes(pamP->width);
-    unsigned int const padRight = (8 - pamP->width %8) %8;
 
     pbm_readpbmrow_packed(pamP->file, bitrow, pamP->width, pamP->format);
 
     for (colChar = 0; colChar < colChars; ++colChar)
         bitrow[colChar] =  ~ bitrow[colChar];
 
-    if (padRight > 0) {
-        bitrow[colChars-1] >>= padRight;  /* Zero clear padding beyond */
-        bitrow[colChars-1] <<= padRight;  /* right edge */
-    }
-
-    fwrite(bitrow, 1, colChars, fP); 
+    /* Zero clear padding beyond right edge */
+    pbm_cleanrowend_packed(bitrow, pamP->width);
+    writeFile(bitrow, colChars, "PBM reader", fP);
 }
 
 
@@ -1834,7 +1873,17 @@ convertRaster(struct pam * const inpamP,
               unsigned int const bitsPerSample,
               bool         const psFilter,
               FILE *       const fP) {
+/*----------------------------------------------------------------------------
+   Read the raster described by *inpamP, and write a bit stream of samples
+   to *fP.  This stream has to be compressed and converted to text before it
+   can be part of a Postscript program.
+   
+   'psFilter' means to do the conversion using built in Postscript filters, as
+   opposed to our own filters via /readstring.
 
+   'bitsPerSample' is how many bits each sample is to take in the Postscript
+   output.
+-----------------------------------------------------------------------------*/
     if (PAM_FORMAT_TYPE(inpamP->format) == PBM_TYPE && bitsPerSample == 1)  {
         unsigned char * bitrow;
         unsigned int row;
@@ -1863,6 +1912,21 @@ convertRaster(struct pam * const inpamP,
 
 
 
+/* FILE MANAGEMENT: File management is pretty hairy here.  A filter, which
+   runs in its own process, needs to be able to cause its output file to
+   close because it might be an internal pipe and the next stage needs to
+   know output is done.  So the forking process must close its copy of the
+   file descriptor.  BUT: if the output of the filter is not an internal
+   pipe but this program's output, then we don't want it closed when the
+   filter terminates because we'll need it to be open for the next image
+   the program converts (with a whole new chain of filters).
+   
+   To prevent the progam output file from getting closed, we pass a
+   duplicate of it to spawnFilters() and keep the original open.
+*/
+
+
+
 static void
 convertPage(FILE *       const ifP, 
             int          const turnflag, 
@@ -1887,7 +1951,7 @@ convertPage(FILE *       const ifP,
             bool         const dict,
             bool         const vmreclaim,
             bool         const levelIsGiven,
-            bool         const levelGiven) {
+            unsigned int const levelGiven) {
     
     struct pam inpam;
     float scols, srows;
@@ -1905,6 +1969,7 @@ convertPage(FILE *       const ifP,
         /* The file stream which is the head of the filter chain; we write to
            this and filtered stuff comes out the other end.
         */
+    FILE * filterChainOfP;
 
     pnm_readpaminit(ifP, &inpam, PAM_STRUCT_SIZE(tuple_type));
 
@@ -1947,7 +2012,11 @@ convertPage(FILE *       const ifP,
     initOutputEncoder(&oe, inpam.width, bitsPerSample,
                       rle, flate, ascii85, psFilter);
 
-    spawnFilters(stdout, &oe, &feedFileP, filterPidList);
+    fflush(stdout);
+    filterChainOfP = fdopen(dup(fileno(stdout)), "w");
+        /* spawnFilters() closes this.  See FILE MANAGEMENT above */
+
+    spawnFilters(filterChainOfP, &oe, &feedFileP, filterPidList);
  
     convertRaster(&inpam, bitsPerSample, psFilter, feedFileP);
 
@@ -1966,13 +2035,16 @@ main(int argc, const char * argv[]) {
 
     FILE * ifP;
     const char * name;  /* malloc'ed */
-    struct cmdlineInfo cmdline;
+    struct CmdlineInfo cmdline;
 
     pm_proginit(&argc, argv);
 
+    setSignals();
+
     parseCommandLine(argc, argv, &cmdline);
 
-    verbose = cmdline.verbose;
+    verbose = cmdline.verbose || cmdline.debug;
+    debug   = cmdline.debug;
 
     if (cmdline.flate && !progIsFlateCapable())
         pm_error("This program cannot do flate compression.  "
@@ -1985,6 +2057,13 @@ main(int argc, const char * argv[]) {
         name = strdup("noname");
     else
         name = basebasename(cmdline.inputFileName);
+
+    /* This program manages file descriptors in a way that assumes
+       that new files will get file descriptor numbers less than 10,
+       so we close superfluous files now to make sure that's true.
+    */
+    closeAllBut(fileno(ifP), fileno(stdout), fileno(stderr));
+
     {
         int eof;  /* There are no more images in the input file */
         unsigned int imageSeq;

@@ -54,22 +54,25 @@
 #endif
 
 
-/* CONFIGURE: If you have an X11-style rgb color names file, define its
-** path here.  This is used by PPM to parse color names into rgb values.
-** If you don't have such a file, comment this out and use the alternative
-** hex and decimal forms to specify colors (see ppm/pgmtoppm.1 for details).  */
-
-#define RGB_DB_PATH \
-"/usr/share/netpbm/rgb.txt:" \
-"/usr/lib/X11/rgb.txt:" \
-"/usr/share/X11/rgb.txt:" \
-"/usr/X11R6/lib/X11/rgb.txt"
-
 /* CONFIGURE: This is the name of an environment variable that tells
 ** where the color names database is.  If the environment variable isn't
-** set, Netpbm tries the hardcoded defaults set above.
+** set, Netpbm tries the hardcoded defaults per macro 'RGB_DB_PATH'
+** (see below).
 */
 #define RGBENV "RGBDEF"    /* name of env-var */
+
+/* CONFIGURE: There should be an environment variable telling where the color
+** names database (color dictionary) is for Netpbm to use, e.g. to determine
+** what color "Salmon" is.  The name of that environment variable is
+** above.  But as some people prefer hardcoded file paths to environment
+** variables, if such environment variable is not set, Netpbm looks for the
+** first existing file in the list which is the value of 'RGB_DB_PATH'.  And
+** if none of those exist (including if the list is empty), Netpbm simply
+** doesn't understand any color names.  Note that Netpbm comes with a color
+** database (lib/rgb.txt in the source tree), but you might choose to have
+** Netpbm use a different one.  See the documentation of ppm_parsecolor()
+** for the format of the color database file.
+*/
 
 #if (defined(SYSV) || defined(__amigaos__))
 
@@ -99,31 +102,6 @@
 #if defined(SYSV)
 #include <malloc.h>
 #endif
-/* extern char* malloc(); */
-/* extern char* realloc(); */
-/* extern char* calloc(); */
-
-/* CONFIGURE: Some systems don't have vfprintf(), which we need for the
-** error-reporting routines.  If you compile and get a link error about
-** this routine, uncomment the first define, which gives you a vfprintf
-** that uses the theoretically non-portable but fairly common routine
-** _doprnt().  If you then get a link error about _doprnt, or
-** message-printing doesn't look like it's working, try the second
-** define instead.
-*/
-/* #define NEED_VFPRINTF1 */
-/* #define NEED_VFPRINTF2 */
-
-/* CONFIGURE: Some systems don't have strstr(), which some routines need.
-** If you compile and get a link error about this routine, uncomment the
-** define, which gives you a strstr.
-*/
-/* #define NEED_STRSTR */
-
-/* CONFIGURE: Set this option if your compiler uses strerror(errno)
-** instead of sys_errlist[errno] for error messages.
-*/
-#define A_STRERROR
 
 /* MSVCRT means we're using the Microsoft Visual C++ runtime library.
 
@@ -159,7 +137,26 @@
 #define HAVE_SETMODE
 #endif
 
-/* #define HAVE_SETMODE */
+#if MSVCRT || defined(__CYGWIN__) || defined(DJGPP)
+#define HAVE_IO_H 1
+#else
+#define HAVE_IO_H 0
+#endif
+
+#if (defined(__GLIBC__) || defined(__GNU_LIBRARY__) || defined(__APPLE__)) || defined(__NetBSD__)
+  #define HAVE_VASPRINTF 1
+#else
+  #define HAVE_VASPRINTF 0
+#endif
+
+/* On Windows, unlinking a file is deleting it, and you can't delete an open
+   file, so unlink of an open file fails.  The errno is (incorrectly) EACCES.
+*/
+#if MSVCRT || defined(__CYGWIN__) || defined(DJGPP)
+  #define CAN_UNLINK_OPEN 0
+#else
+  #define CAN_UNLINK_OPEN 1
+#endif
 
 #ifdef __amigaos__
 #include <clib/exec_protos.h>
@@ -206,66 +203,20 @@
 /* CONFIGURE: GNU Compiler extensions are used in performance critical places
    when available.  Test whether they exist.
 
-   Turn off by defining NO_GCC_BUILTINS.
+   Prevent the build from exploiting these extensions by defining
+   NO_GCC_UNIQUE.
 
-   Note that though these influence the resulting Netpbm machine code, the
-   compiler setting ultimately decides what instruction set the compiler uses.
-   If you want a generic build, check the manual and adjust CFLAGS in
-   config.mk accordingly.
-
-   For example, if you want binaries that run on all Intel x86-32
-   family CPUs back to 80386, adding "-march=i386" to CFLAGS in
-   config.mk is much better than setting NO_GCC_BUILTINS to 1.
-   If you want to be extra sure use:
-   "-march=i386 -mno-mmx -mno-sse -DNO_GCC_BUILTINS"
-
-   Gcc uses SSE and SSE2 instructions by default for AMD/Intel x86-64.
-   Tinkering with "-mno-sse" is not recommended for these machines.  If you
-   don't want SSE code, set NO_GCC_BUILTINS to 1.
+   Before Netpbm 10.65 (December 2013), Netpbm used GCC compiler extensions
+   to generate SSE code in Pamflip.  Starting in 10.65, Netpbm instead uses
+   the more standard operators defined in <emmtrins.h>.  To prevent Netpbm
+   from explicitly using any SSE instructions, set WANT_SSE to N in
+   config.mk.
 */
 
-/*
-  If the compiler is Clang, ignore reported __GNUC__ , __GNUC_MINOR__
-  values.  Treat it as a generic C compiler.  Clang normally reports itself
-  as GCC, but does not necessarily offer all the features of GCC.  For
-  example, we know that Apple Mac OSX 10.8 ships with 
-
-   > cc --version
-     Apple clang version 4.0 (tags/Apple/clang-421.0.60) (based on LLVM 3.1svn)
-
-   which masquerades as GCC 4.2.1, but it does not have SSE2 function
-   __builtin_ia32_pcmpeqb128 .
-
-  On the other hand, research by Prophet of the Way in September 2012
-  indicated that Clang 2.6-3.0 have the above function (and all Netpbm 
-  compiled successfully with SSE exploitation), but 3.1 does not.  He did
-  not find any mention in documentation of that change.
-
-  See below on compilers other than GCC that set __GNUC__:
-  http://sourceforge.net/apps/mediawiki/predef/index.php?title=Compilers
-*/
-#if defined(__GNUC__) && !defined(__clang__) && !defined(NO_GCC_BUILTINS)
+#if defined(__GNUC__) && !defined(NO_GCC_UNIQUE)
   #define GCCVERSION __GNUC__*100 + __GNUC_MINOR__
 #else
   #define GCCVERSION 0
-#endif
-
-/* HAVE_GCC_SSE2 means the compiler has GCC builtins to directly access
-   SSE/SSE2 features.  This is different from whether the compiler generates
-   code that uses these features at all.
-*/
-
-#ifndef HAVE_GCC_SSE2
-/* GCC 4.1 ostensibly has the feature, but experiments with 4.1.2 and
-   4.1.2 in May 2010 exposed an obscure compiler bug and the compiler got
-   stuck with pamflip_sse.c.  So we say the feature exists only on 4.2
-   and up.
-*/
-#if GCCVERSION >=402 && defined(__SSE__) && defined(__SSE2__)
-  #define HAVE_GCC_SSE2 1
-#else
-  #define HAVE_GCC_SSE2 0
-#endif
 #endif
 
 #ifndef HAVE_GCC_BITCOUNT
@@ -279,10 +230,9 @@
 #endif
 
 #ifndef HAVE_GCC_BSWAP
-#if GCCVERSION >=403
+#if GCCVERSION >=403 || defined(__clang__)
   #define HAVE_GCC_BSWAP 1
   /* Use __builtin_bswap32(), __builtin_bswap64() for endian conversion.
-     Available from GCC v 4.3 onward.
      NOTE: On intel CPUs this may produce the bswap operand which is not
      available on 80386. */
 #else
@@ -290,6 +240,35 @@
 #endif
 #endif
 
+#ifndef HAVE_WORKING_SSE2
+#if defined(__SSE2__) && ( GCCVERSION >=402 || defined(__clang__) )
+  #define HAVE_WORKING_SSE2 1
+  /* We can use SSE2 builtin functions to exploit SSE2 instructions.  GCC
+     version 4.2 or newer is required; older GCC ostensibly has these SSE2
+     builtins, but the compiler aborts with an error.  Note that __SSE2__
+     means not only that the compiler has the capability, but that the user
+     has not disabled it via compiler options.
+  */
+#else
+  #define HAVE_WORKING_SSE2 0
+#endif
+#endif
+
+/* UNALIGNED_OK means it's OK to do unaligned memory access, e.g.
+   loading an 8-byte word from an address that is not a multiple of 8.
+   On some systems, such an access causes a trap and a signal.
+
+   This determination is conservative - There may be cases where unaligned
+   access is OK and we say here it isn't.
+
+   We know unaligned access is _not_ OK on at least SPARC and some ARM.
+*/
+
+#if defined(__x86_64__) | defined(__i486__) | defined(__vax__)
+# define UNALIGNED_OK 1
+#else
+# define UNALIGNED_OK 0
+#endif
 
 
 /* CONFIGURE: Some systems seem to need more than standard program linkage

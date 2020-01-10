@@ -2,7 +2,7 @@
 <HTML><HEAD><TITLE>Pnmconvol User Manual</TITLE></HEAD>
 <BODY>
 <H1>pnmconvol</H1>
-Updated: 03 January 2010
+Updated: 30 April 2017
 <BR>
 <A HREF="#index">Table Of Contents</A>
 
@@ -18,6 +18,9 @@ pnmconvol - general MxN convolution on a Netpbm image
 |
 <B>-matrixfile=</B><i>filename</i>[<b>,</b><i>filename</i>[<b>,</b> ...]]
 }
+[<b>-normalize</b>]
+[<b>-bias=<i>n</i></b>]
+
 [<I>netpbmfile</I>]
 
 <p>
@@ -47,13 +50,33 @@ by the convolution matrix (sometimes called a convolution kernel),
 which you supply in one of several ways.  See <a href="#convolutionmatrix">
 Convolution Matrix</a>.
 
-<P>At the edges of the convolved image, where the convolution matrix
-would extend over the edge of the image, <B>pnmconvol</B> just copies
-the input pixels directly to the output.
+<P>At the edges of the convolved image, where the convolution matrix would
+extend over the edge of the image, <B>pnmconvol</B> just copies the input
+pixels directly to the output.  It's often better to deal with the pixels near
+an edge by assuming some blank or background color beyond the edge.  To do
+that, use <b>pnmpad</b> to add a margin all around whose size is half that of
+your convolution matrix size, not counting its center, in the same dimension.
+(E.g. if your convolution matrix is 5 wide by 3 high, use
+<kbd>pnmpad -left=2 -right=2 -top=1 -bottom=1</kbd>).  Feed that enlarged
+image to <b>pnmconvol</b>, then use <b>pamcut</b> to chop the edges off the
+convolved output, getting back to your original image dimensions.  (E.g.
+<kbd>pamcut -left=2 -right=-2 -top=1 -bottom=-1</kbd>).
 
 <p>The convolution computation can result in a value which is outside the
 range representable in the output.  When that happens, <b>pnmconvol</b> just
 clips the output, which means brightness is not conserved.
+
+<p>To avoid clipping, you may want to scale your input values.  For example,
+if your convolution matrix might produce an output value as much as double the
+maximum value in the input, then make sure the maxval of the input (which is
+also the maxval of the output) is at least twice the actual maximum value in
+the input.
+
+<p>Clipping negative numbers deserves special consideration.  If your
+convolution matrix includes negative numbers, it is possible for
+<b>pnmconvol</b> to calculate an output pixel as a negative value,
+which <b>pnmconvol</b> would of course clip to zero, since Netpbm formats
+cannot represent negative numbers.
 
 
 <h3 id="convolutionmatrix">Convolution Matrix</h3>
@@ -100,11 +123,17 @@ matrix has one weight for red, one for green, and one for blue.
 
 <h4 id="matrixopt">Directly On the Command Line</h4>
 
-<p>An example of a <b>-matrix</b> option is
+<p>Here are examples of a <b>-matrix</b> option:
 
 <pre>
 <tt>
     -matrix=0,.2,0;.2,.2,.2;0,.2,0
+</tt>
+</pre>
+
+<pre>
+<tt>
+    -matrix=-1,3,-1
 </tt>
 </pre>
 
@@ -117,7 +146,7 @@ and is the weight to give to each component of a pixel that corresponds to
 that matrix location.
 
 <p>Note that when you supply this option via a shell, semicolon
-(&quot;;&quot;) probably means something to the shell, so use quotation
+(";") probably means something to the shell, so use quotation
 marks.
 
 <p>There is no way with this method to have different weights for different
@@ -180,7 +209,7 @@ an attempt to exploit the generic matrix processing capabilities of
 Netpbm, but as the Netpbm formats don't directly allow matrices with
 the kinds of numbers you need in a convolution matrix, it is quite
 cumbersome.  In fact, there simply is no way to specify some convolution
-matrices with a legal Netpbm image, so make it work, <b>pnmconvol</b> has
+matrices with a legal Netpbm image, so to make it work, <b>pnmconvol</b> has
 to relax the Netpbm file requirement that sample values be no greater
 than the image's maxval.  I.e. it isn't even a real PNM file.
 
@@ -227,7 +256,9 @@ After scaling, the range is 0 to 1.
 subtracting total value from the image, but merely moving it around,
 you'll want to make sure that all the scaled values in (each plane of)
 your convolution PNM add up to 1, which means all the actual sample
-values add up to the maxval.
+values add up to the maxval.  Alternatively, you can use the
+<b>-normalize</b> option to scale the scaled values further to make them all
+add up to 1 automatically.
 
 <p>When you <em>don't</em> specify <b>-nooffset</b>, <b>pnmconvol</b>
 applies an offset, the purpose of which is to allow you to indicate
@@ -323,10 +354,37 @@ weights to maintain normalcy.  And you can use friendly integers.
 <p>This is of course a basic 3x3 average, but without you having to
 specify 1/9 (.1111111) for each weight.
 
-<p>This option has no effect when you specify the convolution matrix
-via pseudo-PNM file.
+<p>This option was new in Netpbm 10.50 (March 2010).  But before Netpbm 10.79
+(June 2017), it has no effect when you specify the convolution matrix via
+pseudo-PNM file.
 
-<p>This option was new in Netpbm 10.50 (March 2010).
+<dt><b>-bias=</b><i>n</i>
+<dd>
+
+<p>This specifies an amount to add to the convolved value for each sample.
+
+<p>The purpose of this addition is normally to handle negative convolution
+results.  Because the convolution matrix can contain negative numbers, the
+convolved value for a pixel could be negative.  But Netpbm formats cannot
+contain negative sample values, so without any bias, such samples would get
+clipped to zero.  The bias allows the output image to retain the information,
+and a program that pocesses that output, knowing the bias value, could
+reconstruct the real convolved values.
+
+<p>For example, with <b>bias=100</b>, a sample whose convolved value is -5
+appears as 95 in the output, whereas a sample whose convolved value is 5
+appears as 105 in the output.
+
+<p>A typical value for the bias is half the maxval, allowing the same range on
+either side of zero.
+
+<p>If the sample value, after adding the bias, is still less than
+zero, <b>pnmconvol</b> clips it to zero.  If it exceeds the maxval of the
+output image, it clips it to the maxval.
+
+<p>The default is zero.
+
+<p>This option was new in Netpbm 10.68 (September 2014).
 
 <DT><B>-nooffset=</b>
 <DD>This is part of the obsolete PNM image method of specifying the
@@ -356,6 +414,8 @@ the maxval.
 <B><A HREF="pgmkernel.html">pgmkernel</A></B>,
 <B><A HREF="pamgauss.html">pamgauss</A></B>,
 <B><A HREF="pammasksharpen.html">pammasksharpen</A></B>,
+<B><A HREF="pnmpad.html">pnmpad</A></B>,
+<B><A HREF="pamcut.html">pamcut</A></B>,
 <B><A HREF="pnm.html">pnm</A></B>
 
 <H2 id="authors">AUTHORS</H2>

@@ -1,6 +1,7 @@
 #! /bin/bash
 # This script tests: pamtofits fitstopnm
-# Also requires: 
+# Also requires:
+
 
 # Should produce 1926073387 101484, cksum of testimg.ppm
-${PBM_TESTPREFIX}pamtofits testimg.ppm | ${PBM_TESTPREFIX}fitstopnm | cksum
+pamtofits testimg.ppm | fitstopnm | cksum

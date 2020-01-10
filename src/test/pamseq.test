@@ -1,5 +1,6 @@
 #! /bin/bash
 # This script tests: pamseq
-# Also requires: 
+# Also requires:
 
-${PBM_TESTPREFIX}pamseq 1 255 | cksum
+
+pamseq 1 255 | cksum

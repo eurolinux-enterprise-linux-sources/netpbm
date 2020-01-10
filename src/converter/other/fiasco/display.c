@@ -3,8 +3,8 @@
  *
  *  Written by:		Ullrich Hafner
  *		
- *  This file is part of FIASCO («F»ractal «I»mage «A»nd «S»equence «CO»dec)
- *  Copyright (C) 1994-2000 Ullrich Hafner <hafner@bigfoot.de>
+ *  This file is part of FIASCO (Fractal Image And Sequence COdec)
+ *  Copyright (C) 1994-2000 Ullrich Hafner
  *		
  *  Based on mpeg2decode, (C) 1994, MPEG Software Simulation Group
  *  and      mpeg2play,   (C) 1994 Stefan Eckart
@@ -307,7 +307,8 @@ alloc_ximage (x11_info_t *xinfo, unsigned width, unsigned height)
       shmem_flag = 0;
       if (fiasco_get_verbosity ())
 	 fprintf (stderr,
-		  "Shared memory not supported\nReverting to normal Xlib.\n");
+              "Shared memory does not work on this system\n"
+              "Reverting to normal Xlib.\n");
    }
 
    if (shmem_flag)

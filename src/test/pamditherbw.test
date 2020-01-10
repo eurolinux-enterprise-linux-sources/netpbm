@@ -1,31 +1,32 @@
 #! /bin/bash
 # This script tests: pamditherbw
-# Also requires: ppmtopgm
+# Also requires: pamchannel pamtopnm
 
-# Make test input
-${PBM_BINPREFIX}ppmtopgm testimg.ppm >${tmpdir}/testimg.pgm
+
+tmpdir=${tmpdir:-/tmp}
+test_red=${tmpdir}/testimg.red
 
 # Test 1.  Simple threshold
-${PBM_TESTPREFIX}pamditherbw -threshold -val=0.5 \
-   ${tmpdir}/testimg.pgm | cksum
+pamchannel -infile=testimg.ppm -tupletype="GRAYSCALE" 0 | pamtopnm | \
+  tee ${test_red} | \
+  pamditherbw -threshold -val=0.5 | cksum
 
 # Test 2.  Floyd-Steinberg
-#${PBM_TESTPREFIX}pamditherbw -floyd -val=0.5 ${tmpdir}/testimg.pgm | cksum
+#pamditherbw -floyd -val=0.5 ${test_red} | cksum
 
 # Test 3. Atkinson
-#${PBM_TESTPREFIX}pamditherbw -atkinson -val=0.5 ${tmpdir}/testimg.pgm | cksum
+#pamditherbw -atkinson -val=0.5 ${test_red} | cksum
 
 # Test 4. Hilbert
-${PBM_TESTPREFIX}pamditherbw -hilbert ${tmpdir}/testimg.pgm | cksum
+pamditherbw -hilbert ${test_red} | cksum
 
 # Test 5. Dither-8
-${PBM_TESTPREFIX}pamditherbw -dither8 ${tmpdir}/testimg.pgm | cksum
+pamditherbw -dither8 ${test_red} | cksum
 
 # Test 6. Cluster4
-${PBM_TESTPREFIX}pamditherbw -cluster4 ${tmpdir}/testimg.pgm | cksum
+pamditherbw -cluster4 ${test_red} | cksum
 
 # Test 7. Atkinson
-#${PBM_TESTPREFIX}pamditherbw -atkinson -val=0.5 ${tmpdir}/testimg.pgm | cksum
+#pamditherbw -atkinson -val=0.5 ${test_red} | cksum
 
-# Remove test file
-rm ${tmpdir}/testimg.pgm
+rm ${test_red}

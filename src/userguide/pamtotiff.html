@@ -2,7 +2,7 @@
 <HTML><HEAD><TITLE>Pamtotiff User Manual</TITLE></HEAD>
 <BODY>
 <H1>pamtotiff</H1>
-Updated: 03 December 2008
+Updated: 05 April 2017
 <BR>
 <A HREF="#index">Table Of Contents</A>
 
@@ -43,8 +43,6 @@ pamtotiff - convert a Netpbm image to a TIFF file
 [<B>-resolutionunit=</b>{<b>inch</b> | <b>centimeter</b> | <b>none</b> |
 <b>in</b> | <b>cm</b> | <b>no</b>}]
 
-[<B>-indexbits=</b>[<b>1</b>[<b>2</b>[<b>4</b>[<b>8</b>]]]]]
-
 [<b>-append</b>]
 
 [<b>-tag=</b><i>taglist</i>]
@@ -64,15 +62,51 @@ as output.
 
 <p>Actually, it handles multi-image Netpbm streams, producing multi-image
 TIFF streams (i.e. a TIFF stream with multiple
-&quot;directories&quot;).  But before Netpbm 10.27 (March 2005), it
+"directories").  But before Netpbm 10.27 (March 2005), it
 ignored all but the first Netpbm image in the input stream.
 
 <h3 id="output">The Output File</h3>
 
-<P>The output goes to Standard Output.  <b>pamtotiff</b> approaches
-this output file differently from Unix and Netpbm convention.  This is
-entirely due to <b>pamtotiff</b>'s use of the TIFF library to do all
-TIFF output.
+<P>By default, the output goes to Standard Output.  Alternatively, you can
+specify an output file with the <b>-output</b> option and <b>pamtotiff</b>
+will write its output directly to that file.
+
+<p>Because of the way the TIFF library (which <b>pamtotiff</b> uses) works,
+when the program writes to Standard Output, it generates the entire TIFF image
+in a temporary file and then copies it to Standard Output; you may see
+negative performance effects of this.
+
+<p>The <b>-output</b> method avoids the performance effects of the copy
+through the temporary file, but there are restrictions on the output file: it
+must be seekable and it must be readable.  The program fails if it is not.
+With Standard Output, neither of those restrictions applies.
+
+<p>With <b>-output</b>, if the file already exists and has data in it,
+<b>pamtotiff</b> appends the image to the existing TIFF file.  (A TIFF file
+may contain multiple images).
+
+<p>By default, <b>pamtotiff</b> creates the file named by <b>-output</b> if it
+does not already exist.  But if you also specify <b>-append</b>, the program
+fails if the file named by <b>-output</b> does not already exist.
+
+<p>Before Netpbm 10.67 (June 2014), there is no <b>-output</b> option and
+Standard Output must be seekable.  So pipes are out.
+
+<p>Before Netpbm 10.67 (June 2014), you could append to Standard Output.  See
+below.  The current program does not have the ability; you must
+use <b>-output</b> to append to an existing TIFF file.
+
+<p>The difference above means current <b>pamtotiff</b> is actually not
+backward compatible, which is a rare thing for Netpbm.  But it's a good thing
+because the previous function was very strange and probably hardly ever
+exploited.
+
+
+<h4 id="oldoutput">Old Versions</h4>
+
+<p>As alluded to above, <b>pamtotiff</b> does output very differently
+in releases before 10.67.  The following describes the old function,
+which is unusual both for Netpbm and for Unix programs in general.
 
 <ul>
 <li>The output file must be seekable.  <b>pamtotiff</b> does not
@@ -124,12 +158,12 @@ format it produces are therefore controlled by that library.
 <P>By default, <B>pamtotiff</B> creates a TIFF file with no
 compression.  This is your best bet most of the time.  If you want to
 try another compression scheme or tweak some of the other even more
-obscure output options, there are a number of options which which to
+obscure output options, there are a number of options which to
 play.
 
 <p>Before Netpbm 8.4 (April 2000), the default was to use LZW compression.
 But then new releases of the TIFF library started omitting the LZW
-compression capability due to concern about patents on LZW.  So
+compression capability because of concern about patents on LZW.  So
 since then, the default has been no compression.  The LZW patents have
 now expired and new TIFF libraries do LZW, but the <b>pamtotiff</b>
 behavior remains the same for compatibility with older TIFF libraries
@@ -155,9 +189,9 @@ Actually, with very old TIFF libraries, <b>-lzw</b> works because no
 distributors of the TIFF library were sensitive yet to the patent
 issue.
 
-<p><b>-flate</b> chooses &quot;flate&quot; compression, which is the
+<p><b>-flate</b> chooses "flate" compression, which is the
 patent-free compression common in the Unix world implemented by the 
-&quot;Z&quot; library.  It is what the PNG format uses.
+"Z" library.  It is what the PNG format uses.
 
 <H4 id="faxcompression">Fax Compression</H4>
 
@@ -232,18 +266,25 @@ before Netpbm 9.21 (December 2001).
 has no effect.
 
 <P>The <B>-minisblack</B> and <B>-miniswhite</B> options force the
-output image to have a &quot;minimum is black&quot; or &quot;minimum
-is white&quot; photometric, respectively.  If you don't specify
+output image to have a "minimum is black" or "minimum
+is white" photometric, respectively.  If you don't specify
 either, <B>pamtotiff</b> uses minimum is black except when using Group
 3 or Group 4 compression, in which case <B>pamtotiff</B> follows CCITT
-fax standards and uses &quot;minimum is white.&quot; This usually
+fax standards and uses "minimum is white." This usually
 results in better compression and is generally preferred for bilevel
-coding.
+coding.  These photometrics are for grayscale images, so these options are
+invalid if the image is color (but only if it is truly color; they are
+valid with, for example, a PPM image that contains only shades of gray).
 
-<P>Before February 2001, <B>pamtotiff</B> always produced
-&quot;minimum is black,&quot; due to a bug.  In either case,
+<P>Before Netpbm 9.11 (February 200)1, <B>pamtotiff</B> always produced
+"minimum is black," because of a bug.  In either case,
 <B>pamtotiff</B> sets the photometric interpretation tag in the TIFF
 output according to which photometric is actually used.
+
+<p>Before Netpbm 10.78 (March 2017), <b>pamtotiff</b> respected
+<b>-miniswhite</b> and <b>-minisblack</b> even with color images, producing
+invalid TIFF images that have the indicated photometric but red, green, and
+blue raster planes.
 
 <P>The <B>-indexbits</B> option is meaningful only for a colormapped
 (paletted) image.  In this kind of image, the raster contains values
@@ -293,7 +334,7 @@ Each tag specification is a name and a value separated by an equal
 sign.  The name is the name of the tag type, except in arbitrary
 upper/lower case.  One place to see the names of TIFF tag types is in
 the TIFF library's <b>tiff.h</b> file, where there is a macro defined
-for each consisting of &quot;TIFF_&quot; plus the name.  E.g. for
+for each consisting of "TIFF_" plus the name.  E.g. for
 the SUBFILETYPE tag type, there is a macro TIFF_SUBFILETYPE.
 
 <p>The format of the value specification for a tag (stuff after the
@@ -330,18 +371,35 @@ an IMAGEWIDTH tag that gives the actual width of the image.
 
 <p><b>-tag</b> was new in Netpbm 10.31 (December 2005).
 
+<h3 id="outputoptions">Output</h3>
+
+<p>See <a href="output">The Output File</a>.
+
+<p><b>-output</b> names the output file.  Without this option
+<b>pamtotiff</b> writes to Standard Output.
+
+<p>The <b>-append</b> option tells <b>pamtotiff</b> only to append to the file
+named by <b>output</b>; not create it.  Without this option, the program
+creates the file it does not already exist.  But even then, if the file does
+already exist, the program appends the image to what is in the file already.
+(A TIFF file may contain multiple images).
+
+<p><b>-append</b> has no effect if you don't also specify <b>-output</b>.
+
+<p>Before Netpbm 10.67 (June 2014), <b>-append</b> means something rather
+different: it means to append the image to the output TIFF file (which is
+always Standard Output in 10.67) instead of replacing its contents.
+
+<p><b>-append</b> was new in Netpbm 10.27 (March 2005).
+
+
+
 <h3 id="other">Other</h3>
 
 <P>You can use the <B>-rowsperstrip</B> option to set the number of
 rows (scanlines) in each strip of data in the output file.  By
 default, the output file has the number of rows per strip set to a
 value that will ensure each strip is no more than 8 kilobytes long.
-
-<p>The <b>-append</b> option tells <b>pamtotiff</b> to add images to
-the existing output file (a TIFF file may contain multiple images)
-instead of the default, which is to replace the output file.
-
-<p><b>-append</b> was new in Netpbm 10.27 (March 2005).
 
 
 <H2 id="notes">NOTES</H2>
@@ -512,7 +570,10 @@ Author: Patrick J. Naughton (<A HREF="mailto:naughton@wind.sun.com">naughton@win
 <LI><A HREF="#synopsis">SYNOPSIS</A>
 <LI><A HREF="#description">DESCRIPTION</A>
   <ul>
-  <li><a href="#outputfile">The Output File</a>
+  <li><a href="#output">The Output File</a>
+  <ul>
+    <li><a href="#oldoutput">Old Versions</a>
+    </ul>
   <li><a href="#library">TIFF Capability</a>
   </ul>
 <LI><A HREF="#options">OPTIONS</A>
@@ -524,6 +585,7 @@ Author: Patrick J. Naughton (<A HREF="mailto:naughton@wind.sun.com">naughton@win
   <li><a href="#fillorder">Fill Order</a>
   <li><a href="#colorspacer">Color Space</a>
   <li><a href="#extratags">Extra Tags</a>
+  <li><a href="#outputoptions">Output</a>
   <li><a href="#other">Other</a>
   </ul>
 <LI><A HREF="#notes">NOTES</A>

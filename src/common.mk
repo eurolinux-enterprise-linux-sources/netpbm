@@ -43,13 +43,11 @@
 # MERGEBINARIES: list of the programs that, in a merge build, are invoked
 #   via the merged Netpbm program
 # CC: C compiler command 
-# CPPFLAGS: C preprocessor options
-# CFLAGS: C compiler general options
+# CFLAGS_CONFIG: C compiler options from config.mk.
 # CFLAGS_TARGET: C compiler options for a particular target
 # LD: linker command
 # LINKERISCOMPILER: 'Y' if the linker invoked by LD is actually a compiler
 #   front end, so takes linker options in a different format
-# LDFLAGS: linker options 
 # LIBS or LOADLIBES: names of libraries to be added to all links
 # COMP_INCLUDES: Compiler option string to establish the search path for
 #   component-specific include files when compiling things or computing
@@ -63,6 +61,10 @@
 # In addition, there is CADD, which is extra C compilation options and
 # is intended to be set on a make command line (e.g. 'make CADD=-g')
 # for options that apply just to a particular build.
+
+# In addition, there is CFLAGS, which is extra C compilation options and is
+# expected to be set via the make command line for a particular build.
+# Likewise, LDFLAGS for link-edit options.
 
 # In addition, there is CFLAGS_PERSONAL, which is extra C
 # compilation options and is expected to be set via environment variable
@@ -84,8 +86,13 @@ include $(SRCDIR)/version.mk
 # importinc/pam.h (as it did originally) is that it lives on a user's system
 # as <netpbm/pam.h>, and therefore all _exported_ header files do say
 # "<netpbm/pam.h>.
+ifneq ($(ALL_INTERNAL_HEADER_FILES_ARE_QUALIFIED),Y)
+  LEGACY_NETPBM_INCLUDE = -Iimportinc/netpbm
+else
+  LEGACY_NETPBM_INCLUDE =
+endif
 
-NETPBM_INCLUDES := -Iimportinc -Iimportinc/netpbm -I$(SRCDIR)/$(SUBDIR)
+NETPBM_INCLUDES := -Iimportinc $(LEGACY_NETPBM_INCLUDE) -I$(SRCDIR)/$(SUBDIR)
 
 # -I. is needed when builddir != srcdir
 INCLUDES = -I. $(COMP_INCLUDES) $(NETPBM_INCLUDES) $(EXTERN_INCLUDES)
@@ -136,16 +143,14 @@ endif
 IMPORTINC_ROOT_HEADERS := pm_config.h inttypes_netpbm.h version.h
 
 IMPORTINC_LIB_HEADERS := \
-  pm.h pbm.h pgm.h ppm.h pnm.h pam.h bitio.h pbmfont.h ppmcmap.h \
+  pm.h pbm.h pgm.h ppm.h pnm.h pam.h pbmfont.h ppmcmap.h \
   pammap.h colorname.h ppmfloyd.h ppmdraw.h pm_system.h ppmdfont.h \
   pm_gamma.h lum.h dithers.h pamdraw.h
 
 IMPORTINC_LIB_UTIL_HEADERS := \
-  bitarith.h bitreverse.h filename.h intcode.h floatcode.h io.h \
+  bitarith.h bitio.h bitreverse.h filename.h intcode.h floatcode.h io.h \
   matrix.h mallocvar.h \
-  nsleep.h nstring.h pm_c_util.h shhopt.h token.h \
-  wordaccess.h wordaccess_64_le.h wordaccess_gcc3_be.h wordaccess_generic.h \
-  wordintclz.h
+  nsleep.h nstring.h pm_c_util.h runlength.h shhopt.h token.h
 
 IMPORTINC_HEADERS := \
   $(IMPORTINC_ROOT_HEADERS) \
@@ -234,7 +239,19 @@ config:
 # -UNDEBUG (in any of various ways) to override this.
 #
 CFLAGS_ALL = \
-  -DNDEBUG $(CPPFLAGS) $(CFLAGS) $(CFLAGS_TARGET) $(CFLAGS_PERSONAL) $(CADD)
+  -DNDEBUG $(CPPFLAGS) $(CFLAGS_CONFIG) $(CFLAGS_TARGET) $(CFLAGS_PERSONAL) $(CFLAGS) $(CADD)
+
+ifeq ($(WANT_SSE),Y)
+  # The only two compilers we've seen that have the SSE capabilities that
+  # WANT_SSE requests are GCC and Clang, and they both have these options and
+  # require them in order for <emmintrin.h> to compile.  On some systems
+  # (x86_64, in our experience), these options are default, but on more
+  # traditional systems, they are not.  Note: __SSE2__ macro tells whether
+  # -msse2 is in effect.
+  CFLAGS_SSE = -msse -msse2
+else
+  CFLAGS_SSE =
+endif
 
 $(OBJECTS): %.o: %.c importinc
 #############################################################################
@@ -271,6 +288,10 @@ $(BUNDLED_URTLIB): $(BUILDDIR)/urt
 	$(MAKE) -C $(dir $@) -f $(SRCDIR)/urt/Makefile \
 	    SRCDIR=$(SRCDIR) BUILDDIR=$(BUILDDIR) $(notdir $@) 
 endif
+
+$(BUILDDIR)/icon/netpbm.o: $(BUILDDIR)/icon
+	$(MAKE) -C $(dir $@) -f $(SRCDIR)/icon/Makefile \
+	    SRCDIR=$(SRCDIR) BUILDDIR=$(BUILDDIR) $(notdir $@) 
 
 # Here are some notes from Nelson H. F. Beebe on April 16, 2002:
 #
@@ -356,11 +377,16 @@ MATHLIB ?= -lm
 
 # Note that LDFLAGS might contain -L options, so order is important.
 # LDFLAGS is commonly set as an environment variable.
-LDFLAGS_ALL = $(shell $(LIBOPT) $(NETPBMLIB)) \
+# Some of the target-specific libraries are internal Netpbm libraries
+# (such as libfiasco), which use Libnetpbm.  So we put $(NETPBMLIB)
+# after LDFLAGS_TARGET.
+LDFLAGS_ALL = $(WINICON_OBJECT) \
+ $(LDFLAGS_TARGET) $(shell $(LIBOPT) $(NETPBMLIB)) \
  $(LDFLAGS) $(LDLIBS) $(MATHLIB) $(RPATH) $(LADD)
 
-$(PORTBINARIES) $(MATHBINARIES): %: %.o $(NETPBMLIB) $(LIBOPT)
-	$(LD) -o $@ $@.o $(LDFLAGS_ALL)
+$(PORTBINARIES) $(MATHBINARIES): %: %.o \
+  $(NETPBMLIB) $(LIBOPT) $(WINICON_OBJECT)
+	$(LD) -o $@$(EXE) $@.o $(ADDL_OBJECTS) $(LDFLAGS_ALL)
 
 
 # MERGE STUFF
@@ -434,7 +460,17 @@ ifeq ($(SYMLINKEXE)x,x)
   SYMLINKEXE := $(SYMLINK)
 endif
 
-$(PKGDIR)/%:
+# An implicit rule for $(PKGDIR)/% does not work because it causes Make
+# sometimes to believe the directory it creates from this rule is an unneeded
+# intermediate file and try to delete it later.  So we explicitly list the
+# possible directories under $(PKGDIR):
+
+PKGMANSUBDIRS = man1 man3 man5 web
+
+PKGSUBDIRS = bin include include/netpbm lib link misc \
+  $(PKGMANSUBDIRS:%=$(PKGMANDIR)/%)
+
+$(PKGSUBDIRS:%=$(PKGDIR)/%):
 	$(SRCDIR)/buildtools/mkinstalldirs $@
 
 .PHONY: install.merge
@@ -469,32 +505,6 @@ $(DATAFILES:%=%_installdata): $(PKGDIR)/misc
 	$(INSTALL) -c -m $(INSTALL_PERM_DATA) \
 	  $(SRCDIR)/$(SUBDIR)/$(@:%_installdata=%) $<
 
-
-.PHONY: install.man install.man1 install.man3 install.man5
-install.man: install.man1 install.man3 install.man5 \
-	$(SUBDIRS:%=%/install.man)
-
-MANUALS1 = $(BINARIES) $(SCRIPTS)
-
-PKGMANDIR = man
-
-install.man1: $(PKGDIR)/$(PKGMANDIR)/man1 $(MANUALS1:%=%_installman1)
-
-install.man3: $(PKGDIR)/$(PKGMANDIR)/man3 $(MANUALS3:%=%_installman3)
-
-install.man5: $(PKGDIR)/$(PKGMANDIR)/man5 $(MANUALS5:%=%_installman5)
-
-%_installman1: $(PKGDIR)/$(PKGMANDIR)/man1
-	perl -w $(SRCDIR)/buildtools/makepointerman $(@:%_installman1=%) \
-          $(NETPBM_DOCURL) $< 1 $(MANPAGE_FORMAT) $(INSTALL_PERM_MAN)
-
-%_installman3: $(PKGDIR)/$(PKGMANDIR)/man3
-	perl -w $(SRCDIR)/buildtools/makepointerman $(@:%_installman3=%) \
-          $(NETPBM_DOCURL) $< 3 $(MANPAGE_FORMAT) $(INSTALL_PERM_MAN)
-
-%_installman5: $(PKGDIR)/$(PKGMANDIR)/man5
-	perl -w $(SRCDIR)/buildtools/makepointerman $(@:%_installman5=%) \
-          $(NETPBM_DOCURL) $< 5 $(MANPAGE_FORMAT) $(INSTALL_PERM_MAN)
 
 .PHONY: clean
 
@@ -536,9 +546,6 @@ endif
 	$(MAKE) -C $(dir $@) -f $(SRCDIR)/$(SUBDIR)/$(dir $@)Makefile \
 	    SRCDIR=$(SRCDIR) BUILDDIR=$(BUILDDIR) $(notdir $@) 
 %/install.lib:
-	$(MAKE) -C $(dir $@) -f $(SRCDIR)/$(SUBDIR)/$(dir $@)Makefile \
-	    SRCDIR=$(SRCDIR) BUILDDIR=$(BUILDDIR) $(notdir $@) 
-%/install.man:
 	$(MAKE) -C $(dir $@) -f $(SRCDIR)/$(SUBDIR)/$(dir $@)Makefile \
 	    SRCDIR=$(SRCDIR) BUILDDIR=$(BUILDDIR) $(notdir $@) 
 %/install.data:

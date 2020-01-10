@@ -35,7 +35,7 @@ typedef int stringCode;
        changes throughout the image.
 
        A variable of this type sometimes has the value -1 instead of
-       a string code due to cheesy programming.
+       a string code because of cheesy programming.
 
        Ergo, this data structure must be signed and at least BITS bits
        wide plus sign bit.
@@ -220,7 +220,7 @@ closestColor(tuple         const color,
     
     unsigned int i;
     unsigned int imin, dmin;
-    bool fits;
+    int fits;
 
     dmin = UINT_MAX;
     imin = 0;
@@ -893,7 +893,7 @@ lzw_create(FILE *       const ofP,
     
        Above that we use a table with 4096 slots plus 20% extra.
        When this is not enough the clear code is emitted.
-       Due to the extra 20% the table itself never fills up.
+       Because of the extra 20% the table itself never fills up.
        
        lzw.hsize and lzw.hshift stay constant through the image.
 
@@ -1544,7 +1544,7 @@ computeTransparent(char          const colorarg[],
         const char * colorspec;
         bool exact;
         tuple transcolor;
-        bool found;
+        int found;
         int colorindex;
         
         if (colorarg[0] == '=') {
